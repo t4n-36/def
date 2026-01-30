@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>数学グレース</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+```
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    body {
+        font-family: 'Poppins', sans-serif;
+        overflow: hidden;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        touch-action: none;
+    }
+    
+    #gameCanvas {
+        display: block;
+        touch-action: none;
+    }
+    
+    #ui {
+        position: absolute;
+        top: 15px;
+        left: 15px;
+        color: #2d3748;
+        font-size: 14px;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 12px 16px;
+        border-radius: 16px;
+        border: 2px solid rgba(99, 102, 241, 0.2);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    #ui > div {
+        margin: 4px 0;
+        font-weight: 600;
+    }
+    
+    #ui span {
+        color: #6366f1;
+        font-weight: 700;
+    }
+    
+    #timer {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        color: #1e293b;
+        font-size: 36px;
+        font-weight: 700;
+        z-index: 10;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 12px 24px;
+        border-radius: 16px;
+        border: 3px solid rgba(239, 68, 68, 0.3);
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
+        min-width: 80px;
+        text-align: center;
+    }
+    
+    #timer.warning {
+        animation: pulse 0.5s infinite;
+        border-color: #ef4444;
+        color: #ef4444;
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.08); }
+    }
+    
+    #questionDisplay {
+        position: absolute;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(20px);
+        border: 3px solid rgba(99, 102, 241, 0.3);
+        border-radius: 24px;
+        padding: 20px 30px;
+        color: #1e293b;
+        text-align: center;
+        z-index: 15;
+        box-shadow: 0 10px 40px rgba(99, 102, 241, 0.15);
+        min-width: 260px;
+        max-width: 90%;
+    }
+    
+    #questionDisplay h2 {
+        color: #4f46e5;
+        font-size: clamp(20px, 5vw, 32px);
+        margin-bottom: 12px;
+        font-weight: 700;
+    }
+    
+    #currentAnswer {
+        color: #6366f1;
+        font-size: clamp(22px, 5.5vw, 28px);
+        min-width: 100px;
+        display: inline-block;
+        border-bottom: 4px solid #a5b4fc;
+        padding: 6px 12px;
+        font-weight: 700;
+        letter-spacing: 4px;
+    }
+    
+    #enemyWarning {
+        position: absolute;
+        top: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(15px);
+        border: 3px solid #ef4444;
+        border-radius: 16px;
+        padding: 16px 28px;
+        color: #1e293b;
+        font-size: clamp(16px, 4vw, 20px);
+        font-weight: 700;
+        text-align: center;
+        display: none !important; /* 常に非表示 */
+        z-index: 50;
+        max-width: 90%;
+        box-shadow: 0 8px 32px rgba(239, 68, 68, 0.2);
+    }
+    
+    #warningCountdown {
+        position: absolute;
+        top: 200px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 251, 235, 0.95);
+        backdrop-filter: blur(15px);
+        border: 3px solid #f59e0b;
+        border-radius: 20px;
+        padding: 16px 32px;
+        color: #d97706;
+        font-size: clamp(32px, 8vw, 48px);
+        font-weight: 700;
+        text-align: center;
+        display: none;
+        z-index: 60;
+        box-shadow: 0 8px 32px rgba(245, 158, 11, 0.25);
+        animation: countdownPulse 0.5s ease-in-out;
+    }
+    
+    @keyframes countdownPulse {
+        0% { 
+            transform: translateX(-50%) scale(0.9);
+            opacity: 0;
+        }
+        100% { 
+            transform: translateX(-50%) scale(1);
+            opacity: 1;
+        }
+    }
+    
+    #enemyWarning.red {
+        border-color: #ef4444;
+        background: rgba(254, 242, 242, 0.98);
+        animation: warningPulse 0.5s infinite;
+        box-shadow: 0 8px 32px rgba(239, 68, 68, 0.3);
+    }
+    
+    #enemyWarning.yellow {
+        border-color: #f59e0b;
+        background: rgba(255, 251, 235, 0.98);
+        animation: warningPulse 0.5s infinite;
+        box-shadow: 0 8px 32px rgba(245, 158, 11, 0.3);
+    }
+    
+    #enemyWarning.purple {
+        border-color: #a78bfa;
+        background: rgba(250, 245, 255, 0.98);
+        animation: warningPulse 0.5s infinite;
+        box-shadow: 0 8px 32px rgba(167, 139, 250, 0.3);
+    }
+    
+    @keyframes warningPulse {
+        0%, 100% { 
+            transform: translateX(-50%) scale(1);
+            opacity: 1;
+        }
+        50% { 
+            transform: translateX(-50%) scale(1.05);
+            opacity: 0.9;
+        }
+    }
+    
+    #keyboard {
+        position: fixed;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(4, 1fr);
+        gap: 8px;
+        z-index: 10;
+        max-width: 300px;
+        width: calc(100% - 20px);
+        padding: 0 10px;
+    }
+    
+    .key-btn {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(99, 102, 241, 0.2);
+        border-radius: 14px;
+        color: #4f46e5;
+        font-size: clamp(22px, 5.5vw, 30px);
+        font-weight: 700;
+        padding: clamp(16px, 4.5vw, 22px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+        touch-action: none;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1);
+        cursor: pointer;
+        aspect-ratio: 1;
+    }
+    
+    .key-btn:active {
+        background: rgba(238, 242, 255, 1);
+        transform: scale(0.95);
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
+    }
+    
+    .key-btn.disabled {
+        background: rgba(241, 245, 249, 0.7);
+        border-color: rgba(148, 163, 184, 0.2);
+        color: rgba(148, 163, 184, 0.4);
+        pointer-events: none;
+        box-shadow: none;
+    }
+    
+    .key-btn.required {
+        animation: requiredPulse 0.6s infinite;
+        border-color: #ef4444;
+        background: rgba(254, 242, 242, 0.95);
+        color: #dc2626;
+        box-shadow: 0 0 24px rgba(239, 68, 68, 0.3), 0 4px 16px rgba(239, 68, 68, 0.2);
+    }
+    
+    @keyframes requiredPulse {
+        0%, 100% { 
+            background: rgba(254, 242, 242, 0.95);
+            transform: scale(1);
+            box-shadow: 0 0 24px rgba(239, 68, 68, 0.3), 0 4px 16px rgba(239, 68, 68, 0.2);
+        }
+        50% { 
+            background: rgba(254, 226, 226, 1);
+            transform: scale(1.08);
+            box-shadow: 0 0 32px rgba(239, 68, 68, 0.4), 0 6px 20px rgba(239, 68, 68, 0.25);
+        }
+    }
+    
+    .key-btn.forbidden {
+        animation: forbiddenShake 0.4s infinite;
+        border-color: #f59e0b;
+        background: rgba(255, 251, 235, 0.95);
+        color: #d97706;
+        box-shadow: 0 0 24px rgba(245, 158, 11, 0.2);
+    }
+    
+    @keyframes forbiddenShake {
+        0%, 100% { 
+            transform: translateX(0);
+        }
+        25% { 
+            transform: translateX(-4px);
+        }
+        75% { 
+            transform: translateX(4px);
+        }
+    }
+    
+    .special-key {
+        background: rgba(99, 102, 241, 0.1);
+        border-color: rgba(99, 102, 241, 0.3);
+        color: #4f46e5;
+        font-size: clamp(14px, 3.5vw, 18px);
+    }
+    
+    .special-key:active {
+        background: rgba(99, 102, 241, 0.2);
+    }
+    
+    #gameOver {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(20px);
+        border: 4px solid rgba(239, 68, 68, 0.3);
+        border-radius: 24px;
+        padding: 32px;
+        color: white;
+        text-align: center;
+        display: none;
+        z-index: 101;
+        max-width: 90%;
+        box-shadow: 0 16px 64px rgba(255, 0, 0, 0.4);
+    }
+    
+    #gameOver h1 {
+        color: #ef4444;
+        font-size: clamp(28px, 8vw, 42px);
+        margin-bottom: 20px;
+        font-weight: 700;
+    }
+    
+    #gameOver p {
+        font-size: clamp(14px, 4vw, 18px);
+        margin: 12px 0;
+        font-weight: 600;
+        color: #475569;
+    }
+    
+    #gameOver button {
+        font-size: clamp(16px, 4vw, 20px);
+        font-weight: 700;
+        padding: 14px 40px;
+        margin-top: 24px;
+        border: none;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+        color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
+    }
+    
+    #gameOver button:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+    }
+    
+    #stageSelect {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 200;
+        padding: 20px;
+    }
+    
+    #stageSelect h1 {
+        color: #1e293b;
+        font-size: clamp(36px, 10vw, 56px);
+        margin-bottom: 12px;
+        font-weight: 700;
+        letter-spacing: -1px;
+    }
+    
+    #stageSelect p {
+        color: #64748b;
+        font-size: clamp(14px, 3.5vw, 16px);
+        margin-bottom: 60px;
+        text-align: center;
+        font-weight: 500;
+    }
+    
+    .start-btn {
+        background: #1e293b;
+        border: none;
+        border-radius: 12px;
+        padding: 18px 48px;
+        color: white;
+        font-size: clamp(18px, 4vw, 22px);
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
+    }
+    
+    .start-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(30, 41, 59, 0.3);
+    }
+    
+    .start-btn:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(30, 41, 59, 0.2);
+    }
+    
+    .difficulty-select {
+        margin-top: 40px;
+        text-align: center;
+    }
+    
+    .difficulty-select label {
+        display: block;
+        color: #64748b;
+        font-size: clamp(13px, 3vw, 15px);
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+    
+    .difficulty-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .diff-btn {
+        background: #f1f5f9;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px 20px;
+        color: #475569;
+        font-size: clamp(13px, 3vw, 15px);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .diff-btn.selected {
+        background: #1e293b;
+        border-color: #1e293b;
+        color: white;
+    }
+    
+    .diff-btn:active {
+        transform: scale(0.95);
+    }
+</style>
+```
+
+</head>
+<body>
+    <div id="stageSelect">
+        <h1>数学グレース</h1>
+        <p>制限時間内に数学問題を解き続けよう</p>
+
+```
+    <div class="difficulty-select">
+        <label>難易度を選択</label>
+        <div class="difficulty-buttons">
+            <button class="diff-btn" data-stage="easy">簡単</button>
+            <button class="diff-btn selected" data-stage="normal">普通</button>
+            <button class="diff-btn" data-stage="hard">難しい</button>
+            <button class="diff-btn" data-stage="expert">超難</button>
+        </div>
+    </div>
+    
+    <button class="start-btn" id="startGameBtn">スタート</button>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="ui">
+    <div>問題: <span id="questionNum">1</span></div>
+    <div>スコア: <span id="score">0</span></div>
+    <div>正答率: <span id="accuracy">100%</span></div>
+</div>
+
+<div id="timer">45</div>
+
+<div id="questionDisplay">
+    <h2 id="questionText">準備中...</h2>
+    <div>
+        <span id="currentAnswer">_</span>
+    </div>
+</div>
+
+<div id="enemyWarning"></div>
+
+<div id="warningCountdown"></div>
+
+<div id="keyboard">
+    <button class="key-btn" data-num="1">1</button>
+    <button class="key-btn" data-num="2">2</button>
+    <button class="key-btn" data-num="3">3</button>
+    <button class="key-btn" data-num="4">4</button>
+    <button class="key-btn" data-num="5">5</button>
+    <button class="key-btn" data-num="6">6</button>
+    <button class="key-btn" data-num="7">7</button>
+    <button class="key-btn" data-num="8">8</button>
+    <button class="key-btn" data-num="9">9</button>
+    <button class="key-btn special-key" id="backspaceBtn">削除</button>
+    <button class="key-btn" data-num="0">0</button>
+    <button class="key-btn special-key" id="submitBtn">決定</button>
+</div>
+
+<div id="gameOver">
+    <h1>ゲームオーバー</h1>
+    <p id="deathReason"></p>
+    <p>到達問題: <span id="finalQuestion"></span></p>
+    <p>最終スコア: <span id="finalScore"></span></p>
+    <button id="restartBtn">もう一度</button>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    // ゲーム状態
+    const game = {
+        score: 0,
+        questionNum: 1,
+        isGameOver: false,
+        timeLeft: 45,
+        correctAnswers: 0,
+        totalQuestions: 0,
+        currentAnswer: '',
+        currentQuestion: null,
+        stage: 'normal' // デフォルト難易度
+    };
+    
+    // ステージ設定
+    const stageConfig = {
+        easy: {
+            name: '簡単',
+            maxNum: 20,
+            operations: ['+', '-'],
+            multiplyMax: 10
+        },
+        normal: {
+            name: '普通',
+            maxNum: 100,
+            operations: ['+', '-', '×'],
+            multiplyMax: 12
+        },
+        hard: {
+            name: '難しい',
+            maxNum: 500,
+            operations: ['+', '-', '×', '÷'],
+            multiplyMax: 15
+        },
+        expert: {
+            name: '超難',
+            maxNum: 9999,
+            operations: ['+', '-', '×', '÷'],
+            multiplyMax: 20
+        }
+    };
+    
+    // 敵タイプ
+    const enemyTypes = {
+        RED: {
+            name: '赤い敵',
+            color: '#FF1493',
+            effect: 'REQUIRE_KEY', // 指定のキーを押さないとダメージ
+            duration: 180, // 3秒
+            spawnChance: 0.3
+        },
+        YELLOW: {
+            name: '黄色い敵',
+            color: '#FFD700',
+            effect: 'FORBID_KEYS', // キーボードを触ってはダメ
+            duration: 120, // 2秒
+            spawnChance: 0.3
+        },
+        PURPLE: {
+            name: '紫の敵',
+            color: '#9370DB',
+            effect: 'DISABLE_KEYS', // ランダムなキーを無効化
+            duration: 240, // 4秒
+            spawnChance: 0.4
+        }
+    };
+    
+    // 現在のエフェクト
+    let currentEffect = null;
+    let effectTimer = 0;
+    let requiredKey = null;
+    let disabledKeys = [];
+    
+    // カウントダウン状態
+    let countdownActive = false;
+    let countdownTimer = 0;
+    
+    // 問題生成
+    function generateQuestion() {
+        const config = stageConfig[game.stage];
+        const operations = config.operations;
+        const op = operations[Math.floor(Math.random() * operations.length)];
+        let num1, num2, answer;
+        
+        const difficulty = Math.floor(game.questionNum / 5) + 1;
+        const maxNum = Math.min(config.maxNum, 10 + difficulty * 5);
+        
+        switch(op) {
+            case '+':
+                num1 = Math.floor(Math.random() * maxNum) + 1;
+                num2 = Math.floor(Math.random() * maxNum) + 1;
+                answer = num1 + num2;
+                break;
+            case '-':
+                num1 = Math.floor(Math.random() * maxNum) + 10;
+                num2 = Math.floor(Math.random() * num1) + 1;
+                answer = num1 - num2;
+                break;
+            case '×':
+                num1 = Math.floor(Math.random() * config.multiplyMax) + 1;
+                num2 = Math.floor(Math.random() * config.multiplyMax) + 1;
+                answer = num1 * num2;
+                break;
+            case '÷':
+                // 割り切れる割り算を生成
+                num2 = Math.floor(Math.random() * 10) + 2; // 2〜11
+                answer = Math.floor(Math.random() * 10) + 1; // 1〜10
+                num1 = num2 * answer; // 割り切れるようにする
+                break;
+        }
+        
+        return {
+            text: `${num1} ${op} ${num2} = ?`,
+            answer: answer
+        };
+    }
+    
+    // 新しい問題
+    function newQuestion() {
+        game.currentQuestion = generateQuestion();
+        game.currentAnswer = '';
+        document.getElementById('questionText').textContent = game.currentQuestion.text;
+        document.getElementById('currentAnswer').textContent = '_';
+    }
+    
+    // 敵スポーン
+    function spawnEnemy() {
+        if (game.isGameOver) return;
+        
+        // カウントダウン中は新しい敵をスポーンしない
+        if (countdownActive) return;
+        
+        // 紫の敵（DISABLE_KEYS）を除外
+        const types = Object.values(enemyTypes).filter(type => type.effect !== 'DISABLE_KEYS');
+        const type = types[Math.floor(Math.random() * types.length)];
+        
+        // 既にエフェクトがアクティブなら無視
+        if (currentEffect) return;
+        
+        // 黄色い敵の場合はカウントダウンを表示
+        if (type.effect === 'FORBID_KEYS') {
+            showCountdown(type);
+            return;
+        }
+        
+        // その他の敵は即座にアクティブ化
+        activateEnemy(type);
+    }
+    
+    // カウントダウン表示
+    function showCountdown(enemyType) {
+        countdownActive = true;
+        countdownTimer = 90; // 1.5秒 (60フレーム/秒 × 1.5)
+        
+        const countdownEl = document.getElementById('warningCountdown');
+        countdownEl.style.display = 'block';
+        
+        // カウントダウン更新用の変数を保存
+        window.pendingEnemy = enemyType;
+    }
+    
+    // カウントダウン更新
+    function updateCountdown() {
+        if (!countdownActive) return;
+        
+        countdownTimer--;
+        const secondsLeft = Math.ceil(countdownTimer / 60);
+        
+        const countdownEl = document.getElementById('warningCountdown');
+        // 1.5秒なので1か0を表示
+        if (secondsLeft >= 1) {
+            countdownEl.textContent = `⚠️`;
+        } else {
+            countdownEl.textContent = `⚠️`;
+        }
+        
+        if (countdownTimer <= 0) {
+            // カウントダウン終了、敵をアクティブ化
+            countdownEl.style.display = 'none';
+            countdownActive = false;
+            
+            if (window.pendingEnemy) {
+                activateEnemy(window.pendingEnemy);
+                window.pendingEnemy = null;
+            }
+        }
+    }
+    
+    // 敵をアクティブ化
+    function activateEnemy(type) {
+        currentEffect = type;
+        effectTimer = type.duration;
+        
+        const warningEl = document.getElementById('enemyWarning');
+        
+        switch(type.effect) {
+            case 'REQUIRE_KEY':
+                requiredKey = Math.floor(Math.random() * 10);
+                warningEl.textContent = `⚠️ ${requiredKey}を押せ！⚠️`;
+                warningEl.className = 'red';
+                updateKeyboardState();
+                break;
+            case 'FORBID_KEYS':
+                warningEl.textContent = `⚠️ キーボードを触るな！⚠️`;
+                warningEl.className = 'yellow';
+                updateKeyboardState();
+                break;
+        }
+        
+        warningEl.style.display = 'block';
+    }
+    
+    // キーボード状態更新
+    function updateKeyboardState() {
+        const keys = document.querySelectorAll('.key-btn');
+        keys.forEach(key => {
+            const num = parseInt(key.dataset.num);
+            key.classList.remove('required', 'forbidden', 'disabled');
+            
+            if (!currentEffect) return;
+            
+            switch(currentEffect.effect) {
+                case 'REQUIRE_KEY':
+                    if (num === requiredKey) {
+                        key.classList.add('required');
+                    }
+                    break;
+                case 'FORBID_KEYS':
+                    key.classList.add('forbidden');
+                    break;
+                // DISABLE_KEYS（紫の敵）は無効化
+            }
+        });
+    }
+    
+    // エフェクト更新
+    function updateEffect() {
+        if (!currentEffect) return;
+        
+        effectTimer--;
+        
+        if (effectTimer <= 0) {
+            // エフェクト終了
+            if (currentEffect.effect === 'REQUIRE_KEY') {
+                // 必要なキーを押さなかった
+                gameOver(`${requiredKey}を押さなかった！`);
+                return;
+            }
+            
+            currentEffect = null;
+            requiredKey = null;
+            disabledKeys = [];
+            document.getElementById('enemyWarning').style.display = 'none';
+            updateKeyboardState();
+        }
+    }
+    
+    // キー入力
+    document.querySelectorAll('.key-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (game.isGameOver) return;
+            
+            // data-num属性がない場合（削除ボタンなど）はスキップ
+            if (!btn.dataset.num) return;
+            
+            const num = parseInt(btn.dataset.num);
+            
+            // 黄色い敵のエフェクト中
+            if (currentEffect && currentEffect.effect === 'FORBID_KEYS') {
+                gameOver('キーボードを触ってしまった！');
+                return;
+            }
+            
+            // 赤い敵のエフェクト中
+            if (currentEffect && currentEffect.effect === 'REQUIRE_KEY') {
+                if (num === requiredKey) {
+                    // 正しいキーを押した
+                    currentEffect = null;
+                    requiredKey = null;
+                    document.getElementById('enemyWarning').style.display = 'none';
+                    updateKeyboardState();
+                    game.score += 50; // ボーナス
+                    document.getElementById('score').textContent = game.score;
+                    return;
+                }
+            }
+            
+            // 通常の数字入力
+            if (game.currentAnswer.length < 4) {
+                game.currentAnswer += num;
+                document.getElementById('currentAnswer').textContent = game.currentAnswer || '_';
+            }
+        });
+    });
+    
+    // 決定ボタン
+    document.getElementById('submitBtn').addEventListener('click', () => {
+        if (game.isGameOver || !game.currentAnswer) return;
+        
+        game.totalQuestions++;
+        const userAnswer = parseInt(game.currentAnswer);
+        
+        if (userAnswer === game.currentQuestion.answer) {
+            game.correctAnswers++;
+            game.score += 100;
+            game.timeLeft = Math.min(game.timeLeft + 3, 60);
+            game.questionNum++;
+            
+            document.getElementById('questionNum').textContent = game.questionNum;
+            document.getElementById('score').textContent = game.score;
+        } else {
+            game.timeLeft = Math.max(game.timeLeft - 5, 1);
+        }
+        
+        const accuracy = Math.round((game.correctAnswers / game.totalQuestions) * 100);
+        document.getElementById('accuracy').textContent = accuracy + '%';
+        
+        newQuestion();
+    });
+    
+    // バックスペースボタン（一文字削除）
+    document.getElementById('backspaceBtn').addEventListener('click', () => {
+        if (game.currentAnswer.length > 0) {
+            game.currentAnswer = game.currentAnswer.slice(0, -1);
+            document.getElementById('currentAnswer').textContent = game.currentAnswer || '_';
+        }
+    });
+    
+    // タイマー更新
+    function updateTimer() {
+        if (game.isGameOver) return;
+        
+        game.timeLeft -= 1/60;
+        
+        const timerEl = document.getElementById('timer');
+        timerEl.textContent = Math.ceil(game.timeLeft);
+        
+        if (game.timeLeft <= 10) {
+            timerEl.classList.add('warning');
+        } else {
+            timerEl.classList.remove('warning');
+        }
+        
+        if (game.timeLeft <= 0) {
+            gameOver('時間切れ！');
+        }
+    }
+    
+    // 敵スポーンタイマー
+    let enemySpawnTimer = 0;
+    function checkEnemySpawn() {
+        if (game.isGameOver) return;
+        
+        enemySpawnTimer++;
+        
+        // 3~7秒ごとにスポーン
+        const spawnInterval = 180 + Math.random() * 240;
+        if (enemySpawnTimer > spawnInterval) {
+            spawnEnemy();
+            enemySpawnTimer = 0;
+        }
+    }
+    
+    // 背景描画
+    function drawBackground() {
+        // グラデーション背景
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#f5f7fa');
+        gradient.addColorStop(0.5, '#c3cfe2');
+        gradient.addColorStop(1, '#e0e7ff');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 幾何学的パターン（おしゃれな六角形）
+        ctx.strokeStyle = 'rgba(99, 102, 241, 0.08)';
+        ctx.lineWidth = 1.5;
+        const hexSize = 50;
+        
+        for (let y = -hexSize; y < canvas.height + hexSize; y += hexSize * 1.5) {
+            for (let x = -hexSize; x < canvas.width + hexSize; x += hexSize * Math.sqrt(3)) {
+                const offsetX = (Math.floor(y / (hexSize * 1.5)) % 2) * (hexSize * Math.sqrt(3) / 2);
+                drawHexagon(x + offsetX, y, hexSize / 2);
+            }
+        }
+        
+        // ビネット効果（ソフト）
+        const gradient2 = ctx.createRadialGradient(
+            canvas.width/2, canvas.height/2, 0,
+            canvas.width/2, canvas.height/2, canvas.width * 0.7
+        );
+        gradient2.addColorStop(0, 'rgba(255, 255, 255, 0)');
+        gradient2.addColorStop(0.7, 'rgba(99, 102, 241, 0.03)');
+        gradient2.addColorStop(1, 'rgba(99, 102, 241, 0.08)');
+        ctx.fillStyle = gradient2;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    function drawHexagon(x, y, size) {
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i;
+            const hx = x + size * Math.cos(angle);
+            const hy = y + size * Math.sin(angle);
+            if (i === 0) {
+                ctx.moveTo(hx, hy);
+            } else {
+                ctx.lineTo(hx, hy);
+            }
+        }
+        ctx.closePath();
+        ctx.stroke();
+    }
+    
+    function gameOver(reason) {
+        if (game.isGameOver) return;
+        
+        game.isGameOver = true;
+        document.getElementById('deathReason').textContent = reason;
+        document.getElementById('finalQuestion').textContent = game.questionNum;
+        document.getElementById('finalScore').textContent = game.score;
+        document.getElementById('gameOver').style.display = 'block';
+    }
+    
+    document.getElementById('restartBtn').onclick = () => {
+        location.reload();
+    };
+    
+    // ゲーム開始
+    let selectedStage = 'normal';
+    
+    function startGame() {
+        game.stage = selectedStage;
+        document.getElementById('stageSelect').style.display = 'none';
+        newQuestion();
+        gameLoop();
+    }
+    
+    // 難易度選択
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedStage = btn.dataset.stage;
+        });
+    });
+    
+    // スタートボタン
+    document.getElementById('startGameBtn').addEventListener('click', () => {
+        startGame();
+    });
+    
+    // ゲームループ
+    function gameLoop() {
+        if (!game.isGameOver) {
+            drawBackground();
+            updateTimer();
+            updateEffect();
+            updateCountdown();
+            checkEnemySpawn();
+        }
+        
+        requestAnimationFrame(gameLoop);
+    }
+</script>
+```
+
+</body>
+</html>
