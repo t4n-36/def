@@ -30,57 +30,60 @@
     
     #ui {
         position: absolute;
-        top: 15px;
-        left: 15px;
-        color: #2d3748;
-        font-size: 14px;
+        top: 20px;
+        left: 20px;
+        color: white;
+        font-size: 16px;
         z-index: 10;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 12px 16px;
-        border-radius: 16px;
-        border: 2px solid rgba(99, 102, 241, 0.2);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        background: rgba(15, 23, 42, 0.9);
+        padding: 16px 20px;
+        border-radius: 4px;
+        border-left: 4px solid #ef4444;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
     
     #ui > div {
-        margin: 4px 0;
+        margin: 6px 0;
         font-weight: 600;
+        letter-spacing: 0.5px;
     }
     
     #ui span {
-        color: #6366f1;
+        color: #ffffff;
         font-weight: 700;
+        font-size: 18px;
     }
     
     #timer {
         position: absolute;
-        top: 15px;
-        right: 15px;
-        color: #1e293b;
-        font-size: 36px;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #ffffff;
+        font-size: clamp(48px, 12vw, 80px);
         font-weight: 700;
-        z-index: 10;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 12px 24px;
-        border-radius: 16px;
-        border: 3px solid rgba(239, 68, 68, 0.3);
-        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
-        min-width: 80px;
-        text-align: center;
+        z-index: 5;
+        font-family: 'Courier New', monospace;
+        letter-spacing: 2px;
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
     }
     
     #timer.warning {
-        animation: pulse 0.5s infinite;
-        border-color: #ef4444;
+        animation: timerPulse 0.5s infinite;
         color: #ef4444;
+        text-shadow: 0 4px 12px rgba(239, 68, 68, 0.6);
+    }
+    
+    @keyframes timerPulse {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); }
+        50% { transform: translate(-50%, -50%) scale(1.05); }
+    }
         box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
     }
     
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.08); }
+    @keyframes timerPulse {
+        0%, 100% { transform: translate(-50%, -50%) scale(1); }
+        50% { transform: translate(-50%, -50%) scale(1.05); }
     }
     
     #questionDisplay {
@@ -88,35 +91,36 @@
         top: 80px;
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(20px);
-        border: 3px solid rgba(99, 102, 241, 0.3);
-        border-radius: 24px;
+        background: rgba(15, 23, 42, 0.95);
         padding: 20px 30px;
-        color: #1e293b;
+        color: white;
         text-align: center;
         z-index: 15;
-        box-shadow: 0 10px 40px rgba(99, 102, 241, 0.15);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         min-width: 260px;
         max-width: 90%;
+        border: 2px solid rgba(239, 68, 68, 0.3);
+        border-radius: 4px;
     }
     
     #questionDisplay h2 {
-        color: #4f46e5;
+        color: #ffffff;
         font-size: clamp(20px, 5vw, 32px);
         margin-bottom: 12px;
         font-weight: 700;
+        letter-spacing: 1px;
     }
     
     #currentAnswer {
-        color: #6366f1;
+        color: #ef4444;
         font-size: clamp(22px, 5.5vw, 28px);
         min-width: 100px;
         display: inline-block;
-        border-bottom: 4px solid #a5b4fc;
+        border-bottom: 3px solid #ef4444;
         padding: 6px 12px;
         font-weight: 700;
         letter-spacing: 4px;
+        font-family: 'Courier New', monospace;
     }
     
     #enemyWarning {
@@ -360,7 +364,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: #ffffff;
+        background: #0f172a;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -370,15 +374,15 @@
     }
     
     #stageSelect h1 {
-        color: #1e293b;
+        color: #ffffff;
         font-size: clamp(36px, 10vw, 56px);
-        margin-bottom: 12px;
+        margin-bottom: 16px;
         font-weight: 700;
-        letter-spacing: -1px;
+        letter-spacing: 2px;
     }
     
     #stageSelect p {
-        color: #64748b;
+        color: #94a3b8;
         font-size: clamp(14px, 3.5vw, 16px);
         margin-bottom: 60px;
         text-align: center;
@@ -386,68 +390,62 @@
     }
     
     .start-btn {
-        background: #1e293b;
+        background: #ef4444;
         border: none;
-        border-radius: 12px;
-        padding: 18px 48px;
+        border-radius: 4px;
+        padding: 20px 60px;
         color: white;
-        font-size: clamp(18px, 4vw, 22px);
+        font-size: clamp(18px, 4vw, 24px);
         font-weight: 700;
         cursor: pointer;
         transition: all 0.2s ease;
-        box-shadow: 0 4px 12px rgba(30, 41, 59, 0.2);
+        box-shadow: 0 4px 0 #991b1b;
+        letter-spacing: 1px;
     }
     
     .start-btn:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(30, 41, 59, 0.3);
+        box-shadow: 0 6px 0 #991b1b;
     }
     
     .start-btn:active {
-        transform: translateY(0);
-        box-shadow: 0 2px 8px rgba(30, 41, 59, 0.2);
+        transform: translateY(2px);
+        box-shadow: 0 2px 0 #991b1b;
     }
     
-    .difficulty-select {
-        margin-top: 40px;
-        text-align: center;
-    }
-    
-    .difficulty-select label {
-        display: block;
-        color: #64748b;
-        font-size: clamp(13px, 3vw, 15px);
-        font-weight: 600;
-        margin-bottom: 12px;
-    }
-    
-    .difficulty-buttons {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
+    #prepCountdown {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #0f172a;
+        display: none;
+        flex-direction: column;
+        align-items: center;
         justify-content: center;
+        z-index: 250;
     }
     
-    .diff-btn {
-        background: #f1f5f9;
-        border: 2px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 10px 20px;
-        color: #475569;
-        font-size: clamp(13px, 3vw, 15px);
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s ease;
+    #prepCountdown .count {
+        color: #ef4444;
+        font-size: clamp(80px, 20vw, 160px);
+        font-weight: 700;
+        animation: prepPulse 1s ease-in-out;
     }
     
-    .diff-btn.selected {
-        background: #1e293b;
-        border-color: #1e293b;
-        color: white;
-    }
-    
-    .diff-btn:active {
-        transform: scale(0.95);
+    @keyframes prepPulse {
+        0% { 
+            transform: scale(0.5);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.2);
+        }
+        100% { 
+            transform: scale(1);
+            opacity: 1;
+        }
     }
 </style>
 ```
@@ -455,32 +453,25 @@
 </head>
 <body>
     <div id="stageSelect">
-        <h1>数学グレース</h1>
+        <h1>MATH GRACE</h1>
         <p>制限時間内に数学問題を解き続けよう</p>
+        <button class="start-btn" id="startGameBtn">START</button>
+    </div>
 
 ```
-    <div class="difficulty-select">
-        <label>難易度を選択</label>
-        <div class="difficulty-buttons">
-            <button class="diff-btn" data-stage="easy">簡単</button>
-            <button class="diff-btn selected" data-stage="normal">普通</button>
-            <button class="diff-btn" data-stage="hard">難しい</button>
-            <button class="diff-btn" data-stage="expert">超難</button>
-        </div>
-    </div>
-    
-    <button class="start-btn" id="startGameBtn">スタート</button>
+<div id="prepCountdown">
+    <div class="count"></div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
 
 <div id="ui">
-    <div>問題: <span id="questionNum">1</span></div>
+    <div>階層: <span id="floor">1</span></div>
+    <div>問題: <span id="questionNum">0</span> / 10</div>
     <div>スコア: <span id="score">0</span></div>
-    <div>正答率: <span id="accuracy">100%</span></div>
 </div>
 
-<div id="timer">45</div>
+<div id="timer">25.00</div>
 
 <div id="questionDisplay">
     <h2 id="questionText">準備中...</h2>
@@ -530,43 +521,26 @@
     // ゲーム状態
     const game = {
         score: 0,
-        questionNum: 1,
+        questionNum: 0,
+        floor: 1,
+        questionsPerFloor: 10,
         isGameOver: false,
-        timeLeft: 45,
+        timeLeft: 25.00,
         correctAnswers: 0,
         totalQuestions: 0,
         currentAnswer: '',
-        currentQuestion: null,
-        stage: 'normal' // デフォルト難易度
+        currentQuestion: null
     };
     
-    // ステージ設定
-    const stageConfig = {
-        easy: {
-            name: '簡単',
-            maxNum: 20,
-            operations: ['+', '-'],
-            multiplyMax: 10
-        },
-        normal: {
-            name: '普通',
-            maxNum: 100,
-            operations: ['+', '-', '×'],
-            multiplyMax: 12
-        },
-        hard: {
-            name: '難しい',
-            maxNum: 500,
+    // 問題難易度（階層によって上昇）
+    function getDifficulty() {
+        const baseMax = 50 * game.floor;
+        return {
+            maxNum: Math.min(baseMax, 500),
             operations: ['+', '-', '×', '÷'],
-            multiplyMax: 15
-        },
-        expert: {
-            name: '超難',
-            maxNum: 9999,
-            operations: ['+', '-', '×', '÷'],
-            multiplyMax: 20
-        }
-    };
+            multiplyMax: Math.min(10 + game.floor * 2, 20)
+        };
+    }
     
     // 敵タイプ
     const enemyTypes = {
@@ -605,13 +579,12 @@
     
     // 問題生成
     function generateQuestion() {
-        const config = stageConfig[game.stage];
+        const config = getDifficulty();
         const operations = config.operations;
         const op = operations[Math.floor(Math.random() * operations.length)];
         let num1, num2, answer;
         
-        const difficulty = Math.floor(game.questionNum / 5) + 1;
-        const maxNum = Math.min(config.maxNum, 10 + difficulty * 5);
+        const maxNum = config.maxNum;
         
         switch(op) {
             case '+':
@@ -620,7 +593,7 @@
                 answer = num1 + num2;
                 break;
             case '-':
-                num1 = Math.floor(Math.random() * maxNum) + 10;
+                num1 = Math.floor(Math.random() * maxNum) + Math.floor(maxNum / 2);
                 num2 = Math.floor(Math.random() * num1) + 1;
                 answer = num1 - num2;
                 break;
@@ -630,10 +603,9 @@
                 answer = num1 * num2;
                 break;
             case '÷':
-                // 割り切れる割り算を生成
-                num2 = Math.floor(Math.random() * 10) + 2; // 2〜11
-                answer = Math.floor(Math.random() * 10) + 1; // 1〜10
-                num1 = num2 * answer; // 割り切れるようにする
+                num2 = Math.floor(Math.random() * config.multiplyMax) + 2;
+                answer = Math.floor(Math.random() * config.multiplyMax) + 1;
+                num1 = num2 * answer;
                 break;
         }
         
@@ -652,29 +624,6 @@
     }
     
     // 敵スポーン
-    function spawnEnemy() {
-        if (game.isGameOver) return;
-        
-        // カウントダウン中は新しい敵をスポーンしない
-        if (countdownActive) return;
-        
-        // 紫の敵（DISABLE_KEYS）を除外
-        const types = Object.values(enemyTypes).filter(type => type.effect !== 'DISABLE_KEYS');
-        const type = types[Math.floor(Math.random() * types.length)];
-        
-        // 既にエフェクトがアクティブなら無視
-        if (currentEffect) return;
-        
-        // 黄色い敵の場合はカウントダウンを表示
-        if (type.effect === 'FORBID_KEYS') {
-            showCountdown(type);
-            return;
-        }
-        
-        // その他の敵は即座にアクティブ化
-        activateEnemy(type);
-    }
-    
     // カウントダウン表示
     function showCountdown(enemyType) {
         countdownActive = true;
@@ -830,18 +779,23 @@
         
         if (userAnswer === game.currentQuestion.answer) {
             game.correctAnswers++;
-            game.score += 100;
-            game.timeLeft = Math.min(game.timeLeft + 3, 60);
+            game.score += 100 * game.floor;
+            game.timeLeft = Math.min(game.timeLeft + 2, 30);
             game.questionNum++;
+            
+            // 階層進行チェック
+            if (game.questionNum >= game.questionsPerFloor) {
+                game.floor++;
+                game.questionNum = 0;
+                document.getElementById('floor').textContent = game.floor;
+                // 階層アップ通知（オプション）
+            }
             
             document.getElementById('questionNum').textContent = game.questionNum;
             document.getElementById('score').textContent = game.score;
         } else {
-            game.timeLeft = Math.max(game.timeLeft - 5, 1);
+            game.timeLeft = Math.max(game.timeLeft - 3, 0.5);
         }
-        
-        const accuracy = Math.round((game.correctAnswers / game.totalQuestions) * 100);
-        document.getElementById('accuracy').textContent = accuracy + '%';
         
         newQuestion();
     });
@@ -861,7 +815,7 @@
         game.timeLeft -= 1/60;
         
         const timerEl = document.getElementById('timer');
-        timerEl.textContent = Math.ceil(game.timeLeft);
+        timerEl.textContent = game.timeLeft.toFixed(2);
         
         if (game.timeLeft <= 10) {
             timerEl.classList.add('warning');
@@ -954,23 +908,68 @@
     };
     
     // ゲーム開始
-    let selectedStage = 'normal';
-    
     function startGame() {
-        game.stage = selectedStage;
         document.getElementById('stageSelect').style.display = 'none';
-        newQuestion();
-        gameLoop();
+        showPrepCountdown();
     }
     
-    // 難易度選択
-    document.querySelectorAll('.diff-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            selectedStage = btn.dataset.stage;
-        });
-    });
+    // 準備カウントダウン
+    function showPrepCountdown() {
+        const prepEl = document.getElementById('prepCountdown');
+        const countEl = prepEl.querySelector('.count');
+        prepEl.style.display = 'flex';
+        
+        let count = 3;
+        countEl.textContent = count;
+        
+        const interval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                countEl.textContent = count;
+            } else {
+                countEl.textContent = 'START!';
+                setTimeout(() => {
+                    prepEl.style.display = 'none';
+                    newQuestion();
+                    gameLoop();
+                }, 500);
+                clearInterval(interval);
+            }
+        }, 1000);
+    }
+    
+    // 敵スポーン（階層によって変化）
+    function spawnEnemy() {
+        if (game.isGameOver) return;
+        
+        // カウントダウン中は新しい敵をスポーンしない
+        if (countdownActive) return;
+        
+        // 既にエフェクトがアクティブなら無視
+        if (currentEffect) return;
+        
+        let availableEnemies = [];
+        
+        // 階層1: 赤い敵のみ
+        if (game.floor === 1) {
+            availableEnemies = [enemyTypes.RED];
+        }
+        // 階層2以降: 赤と黄色
+        else {
+            availableEnemies = [enemyTypes.RED, enemyTypes.YELLOW];
+        }
+        
+        const type = availableEnemies[Math.floor(Math.random() * availableEnemies.length)];
+        
+        // 黄色い敵の場合はカウントダウンを表示
+        if (type.effect === 'FORBID_KEYS') {
+            showCountdown(type);
+            return;
+        }
+        
+        // その他の敵は即座にアクティブ化
+        activateEnemy(type);
+    }
     
     // スタートボタン
     document.getElementById('startGameBtn').addEventListener('click', () => {
