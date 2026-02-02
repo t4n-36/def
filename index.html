@@ -3,1161 +3,624 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <title>Math Running</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>複素関数エクスプローラー</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
 ```
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        -webkit-tap-highlight-color: transparent;
-        -webkit-touch-callout: none;
-        -webkit-user-select: none;
-        user-select: none;
-    }
-    
-    html, body {
-        width: 100%;
-        height: 100vh;
-        height: 100dvh;
-        overflow: hidden;
-        position: fixed;
-        overscroll-behavior: none;
-    }
-    
     body {
-        font-family: 'Poppins', sans-serif;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        overflow: hidden;
+        font-family: 'Arial', sans-serif;
         touch-action: none;
     }
     
-    #gameCanvas {
+    #canvas {
         display: block;
-        touch-action: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        width: 100vw;
+        height: 100vh;
     }
     
     #ui {
-        position: fixed;
-        top: 180px;
-        left: 20px;
+        position: absolute;
+        top: 10px;
+        left: 10px;
         color: white;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 15px;
+        border-radius: 8px;
         font-size: 14px;
-        z-index: 10;
-        background: rgba(15, 23, 42, 0.9);
-        padding: 12px 16px;
-        border-radius: 4px;
-        border-left: 4px solid #ef4444;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 100;
+        max-width: 300px;
     }
     
-    #ui > div {
-        margin: 4px 0;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        font-size: 14px;
+    .button-group {
+        margin: 10px 0;
     }
     
-    #ui span {
-        color: #ffffff;
-        font-weight: 700;
-        font-size: 16px;
+    button {
+        background: rgba(100, 100, 255, 0.8);
+        border: none;
+        color: white;
+        padding: 8px 12px;
+        margin: 3px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background 0.2s;
     }
     
-    #timer {
-        position: fixed;
+    button:hover {
+        background: rgba(120, 120, 255, 1);
+    }
+    
+    button.active {
+        background: rgba(255, 100, 100, 0.9);
+    }
+    
+    input[type="range"] {
+        width: 100%;
+        margin: 5px 0;
+    }
+    
+    /* Virtual Joysticks */
+    .joystick {
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        bottom: 30px;
+        display: none;
+        touch-action: none;
+    }
+    
+    .joystick.active {
+        display: block;
+    }
+    
+    #leftJoystick {
+        left: 30px;
+    }
+    
+    .joystick-handle {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.5);
+        border: 2px solid rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        color: #1e293b;
-        font-size: clamp(48px, 12vw, 80px);
-        font-weight: 700;
-        z-index: 5;
-        font-family: 'Courier New', monospace;
-        letter-spacing: 2px;
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        transition: color 0.3s ease;
+        touch-action: none;
     }
     
-    #timer.time-add {
-        animation: flashGreen 0.3s ease;
-    }
-    
-    #timer.time-sub {
-        animation: flashRed 0.3s ease;
-    }
-    
-    @keyframes flashGreen {
-        0%, 100% { color: #1e293b; }
-        50% { color: #10b981; text-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
-    }
-    
-    @keyframes flashRed {
-        0%, 100% { color: #1e293b; }
-        50% { color: #ef4444; text-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
-    }
-    
-    #questionDisplay {
-        position: fixed;
-        top: 300px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(15, 23, 42, 0.95);
-        padding: 20px 30px;
-        color: white;
-        text-align: center;
-        z-index: 15;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-        min-width: 260px;
-        max-width: 90%;
-        border: 2px solid rgba(239, 68, 68, 0.3);
-        border-radius: 4px;
-    }
-    
-    #questionDisplay h2 {
-        color: #ffffff;
-        font-size: clamp(20px, 5vw, 32px);
-        margin-bottom: 12px;
-        font-weight: 700;
-        letter-spacing: 1px;
-    }
-    
-    #currentAnswer {
-        color: #ef4444;
-        font-size: clamp(22px, 5.5vw, 28px);
-        min-width: 100px;
-        display: inline-block;
-        border-bottom: 3px solid #ef4444;
-        padding: 6px 12px;
-        font-weight: 700;
-        letter-spacing: 4px;
-        font-family: 'Courier New', monospace;
-    }
-    
-    #warningCountdown {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: rgba(255, 251, 235, 0.95);
-        backdrop-filter: blur(15px);
-        border: 3px solid #f59e0b;
-        border-radius: 8px;
-        padding: 12px 24px;
-        color: #d97706;
-        font-size: clamp(24px, 6vw, 36px);
-        font-weight: 700;
-        text-align: center;
-        display: none;
-        z-index: 60;
-        box-shadow: 0 8px 32px rgba(245, 158, 11, 0.25);
-    }
-    
-    #keyboard {
-        position: fixed;
+    #info {
+        position: absolute;
         bottom: 10px;
         left: 50%;
         transform: translateX(-50%);
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        grid-template-rows: repeat(4, 1fr);
-        gap: 8px;
-        z-index: 10;
-        max-width: 300px;
-        width: calc(100% - 20px);
-        padding: 0 10px;
-    }
-    
-    .key-btn {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border: 2px solid rgba(99, 102, 241, 0.2);
-        border-radius: 14px;
-        color: #4f46e5;
-        font-size: clamp(22px, 5.5vw, 30px);
-        font-weight: 700;
-        padding: clamp(16px, 4.5vw, 22px);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        touch-action: none;
-        transition: all 0.2s ease;
-        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.1);
-        cursor: pointer;
-        aspect-ratio: 1;
-    }
-    
-    .key-btn:active {
-        background: rgba(238, 242, 255, 1);
-        transform: scale(0.95);
-        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
-    }
-    
-    .key-btn.disabled {
-        background: rgba(241, 245, 249, 0.7);
-        border-color: rgba(148, 163, 184, 0.2);
-        color: rgba(148, 163, 184, 0.4);
-        pointer-events: none;
-        box-shadow: none;
-    }
-    
-    .key-btn.required {
-        animation: requiredPulse 0.6s infinite;
-        border-color: #ef4444;
-        background: rgba(254, 242, 242, 0.95);
-        color: #dc2626;
-        box-shadow: 0 0 24px rgba(239, 68, 68, 0.3), 0 4px 16px rgba(239, 68, 68, 0.2);
-    }
-    
-    @keyframes requiredPulse {
-        0%, 100% { 
-            background: rgba(254, 242, 242, 0.95);
-            transform: scale(1);
-        }
-        50% { 
-            background: rgba(254, 226, 226, 1);
-            transform: scale(1.08);
-        }
-    }
-    
-    .key-btn.forbidden {
-        animation: forbiddenShake 0.4s infinite;
-        border-color: #f59e0b;
-        background: rgba(255, 251, 235, 0.95);
-        color: #d97706;
-        box-shadow: 0 0 24px rgba(245, 158, 11, 0.2);
-    }
-    
-    @keyframes forbiddenShake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-4px); }
-        75% { transform: translateX(4px); }
-    }
-    
-    .special-key {
-        background: rgba(99, 102, 241, 0.1);
-        border-color: rgba(99, 102, 241, 0.3);
-        color: #4f46e5;
-        font-size: clamp(14px, 3.5vw, 18px);
-    }
-    
-    .special-key:active {
-        background: rgba(99, 102, 241, 0.2);
-    }
-    
-    #stageSelect {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #0f172a;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 200;
-        padding: 20px;
-    }
-    
-    #stageSelect h1 {
-        color: #ffffff;
-        font-size: clamp(36px, 10vw, 56px);
-        margin-bottom: 24px;
-        font-weight: 700;
-        letter-spacing: 2px;
-    }
-    
-    .enemy-preview {
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
-        padding: 20px;
-        margin-bottom: 40px;
-        max-width: 400px;
-        width: 90%;
-    }
-    
-    .enemy-preview h3 {
-        color: #ef4444;
-        font-size: clamp(16px, 4vw, 20px);
-        margin-bottom: 12px;
-    }
-    
-    .enemy-preview-image {
-        background: rgba(239, 68, 68, 0.2);
-        border: 2px solid #ef4444;
-        border-radius: 8px;
-        padding: 16px;
-        margin: 12px 0;
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
-    .key-preview {
-        background: rgba(254, 242, 242, 0.95);
-        border: 2px solid #ef4444;
-        border-radius: 8px;
-        padding: 12px 16px;
-        color: #dc2626;
-        font-size: 20px;
-        font-weight: 700;
-        min-width: 50px;
-        text-align: center;
-        animation: requiredPulse 0.6s infinite;
-    }
-    
-    .enemy-desc {
-        color: #94a3b8;
-        font-size: clamp(13px, 3vw, 15px);
-        line-height: 1.6;
-    }
-    
-    .start-btn {
-        background: #ef4444;
-        border: none;
-        border-radius: 4px;
-        padding: 20px 60px;
         color: white;
-        font-size: clamp(18px, 4vw, 24px);
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 4px 0 #991b1b;
-        letter-spacing: 1px;
-    }
-    
-    .start-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 0 #991b1b;
-    }
-    
-    .start-btn:active {
-        transform: translateY(2px);
-        box-shadow: 0 2px 0 #991b1b;
-    }
-    
-    #prepCountdown {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #0f172a;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 250;
-    }
-    
-    #prepCountdown .count {
-        color: #ef4444;
-        font-size: clamp(80px, 20vw, 160px);
-        font-weight: 700;
-        animation: prepPulse 1s ease-in-out;
-    }
-    
-    @keyframes prepPulse {
-        0% { 
-            transform: scale(0.5);
-            opacity: 0;
-        }
-        50% {
-            transform: scale(1.2);
-        }
-        100% { 
-            transform: scale(1);
-            opacity: 1;
-        }
-    }
-    
-    #floorTransition {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: #0f172a;
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        z-index: 250;
-        padding: 20px;
-    }
-    
-    #floorTransition h2 {
-        color: #ffffff;
-        font-size: clamp(28px, 8vw, 48px);
-        margin-bottom: 30px;
-        font-weight: 700;
-    }
-    
-    #floorTransition .new-enemy-info {
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid rgba(255, 255, 255, 0.2);
+        background: rgba(0, 0, 0, 0.7);
+        padding: 10px 20px;
         border-radius: 8px;
-        padding: 24px;
-        margin-bottom: 40px;
-        max-width: 500px;
-        width: 90%;
-    }
-    
-    #floorTransition .new-enemy-info h3 {
-        color: #f59e0b;
-        font-size: clamp(18px, 5vw, 24px);
-        margin-bottom: 16px;
-    }
-    
-    .forbidden-preview {
-        background: rgba(255, 251, 235, 0.2);
-        border: 2px solid #f59e0b;
-        border-radius: 8px;
-        padding: 16px;
-        margin: 12px 0;
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
-    .key-forbidden {
-        background: rgba(255, 251, 235, 0.95);
-        border: 2px solid #f59e0b;
-        border-radius: 8px;
-        padding: 12px 16px;
-        color: #d97706;
-        font-size: 20px;
-        font-weight: 700;
-        min-width: 50px;
+        font-size: 12px;
         text-align: center;
-        animation: forbiddenShake 0.4s infinite;
     }
     
-    .continue-btn {
-        background: #10b981;
-        border: none;
-        border-radius: 4px;
-        padding: 18px 50px;
-        color: white;
-        font-size: clamp(16px, 4vw, 22px);
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 4px 0 #047857;
-        letter-spacing: 1px;
-    }
-    
-    .continue-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 0 #047857;
-    }
-    
-    .continue-btn:active {
-        transform: translateY(2px);
-        box-shadow: 0 2px 0 #047857;
-    }
-    
-    #gameOver {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(20px);
-        border: 4px solid rgba(239, 68, 68, 0.3);
-        border-radius: 8px;
-        padding: 32px;
-        color: #1e293b;
-        text-align: center;
-        display: none;
-        z-index: 101;
-        max-width: 90%;
-        box-shadow: 0 16px 64px rgba(239, 68, 68, 0.15);
-    }
-    
-    #gameOver h1 {
-        color: #ef4444;
-        font-size: clamp(28px, 8vw, 42px);
-        margin-bottom: 20px;
-        font-weight: 700;
-    }
-    
-    #gameOver p {
-        font-size: clamp(14px, 4vw, 18px);
-        margin: 12px 0;
-        font-weight: 600;
-        color: #475569;
-    }
-    
-    #gameOver button {
-        font-size: clamp(16px, 4vw, 20px);
-        font-weight: 700;
-        padding: 14px 40px;
-        margin-top: 24px;
-        border: none;
-        border-radius: 8px;
-        background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-        color: white;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 16px rgba(99, 102, 241, 0.3);
-    }
-    
-    #gameOver button:active {
-        transform: scale(0.95);
-        box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+    @media (max-width: 768px) {
+        #ui {
+            font-size: 11px;
+            padding: 10px;
+            max-width: 200px;
+        }
+        
+        button {
+            padding: 6px 8px;
+            font-size: 10px;
+        }
     }
 </style>
 ```
 
 </head>
 <body>
-    <div id="stageSelect">
-        <h1>MATH RUNNING</h1>
+    <canvas id="canvas"></canvas>
 
 ```
-    <div class="enemy-preview">
-        <h3>🔴 赤い敵</h3>
-        <div class="enemy-preview-image">
-            <div class="key-preview">5</div>
-        </div>
-        <div class="enemy-desc">
-            指定された数字キーが光ります。<br>
-            その数字を押さないとゲームオーバー！
-        </div>
-    </div>
-    
-    <button class="start-btn" id="startGameBtn">START</button>
-</div>
-
-<div id="prepCountdown">
-    <div class="count"></div>
-</div>
-
-<div id="floorTransition">
-    <h2>階層 <span id="newFloorNum"></span></h2>
-    <div class="new-enemy-info">
-        <h3>🟡 新しい敵が登場！</h3>
-        <div class="forbidden-preview" id="newEnemyPreview"></div>
-        <div class="enemy-desc" id="newEnemyDesc"></div>
-    </div>
-    <button class="continue-btn" id="continueBtn">次の階層へ</button>
-</div>
-
-<canvas id="gameCanvas"></canvas>
-
 <div id="ui">
-    <div>階層: <span id="floor">1</span></div>
-    <div>問題: <span id="questionNum">0</span> / 10</div>
-    <div>スコア: <span id="score">0</span></div>
-</div>
-
-<div id="timer">45.00</div>
-
-<div id="warningCountdown">⚠️ <span id="countdownNum"></span></div>
-
-<div id="questionDisplay">
-    <h2 id="questionText">準備中...</h2>
-    <div>
-        <span id="currentAnswer">_</span>
+    <div><strong>複素関数エクスプローラー</strong></div>
+    <div class="button-group">
+        <div>関数:</div>
+        <button id="funcZ2" class="active">z²</button>
+        <button id="funcZ3">z³</button>
+        <button id="funcExp">e^z</button>
+    </div>
+    <div class="button-group">
+        <label id="sliderLabel">Im(z) 固定値: 0.00</label>
+        <input type="range" id="fixedValueSlider" min="-5" max="5" step="0.1" value="0">
+    </div>
+    <div style="margin-top: 10px; font-size: 11px; opacity: 0.8;">
+        <div>PC: WASD移動, マウス視点</div>
+        <div>Space上昇, Ctrl下降, Shift走る</div>
     </div>
 </div>
 
-<div id="keyboard">
-    <button class="key-btn" data-num="1">1</button>
-    <button class="key-btn" data-num="2">2</button>
-    <button class="key-btn" data-num="3">3</button>
-    <button class="key-btn" data-num="4">4</button>
-    <button class="key-btn" data-num="5">5</button>
-    <button class="key-btn" data-num="6">6</button>
-    <button class="key-btn" data-num="7">7</button>
-    <button class="key-btn" data-num="8">8</button>
-    <button class="key-btn" data-num="9">9</button>
-    <button class="key-btn special-key" id="backspaceBtn">削除</button>
-    <button class="key-btn" data-num="0">0</button>
-    <button class="key-btn special-key" id="submitBtn">決定</button>
+<div id="leftJoystick" class="joystick">
+    <div class="joystick-handle"></div>
 </div>
 
-<div id="gameOver">
-    <h1>ゲームオーバー</h1>
-    <p id="deathReason"></p>
-    <p>到達階層: <span id="finalFloor"></span></p>
-    <p>最終スコア: <span id="finalScore"></span></p>
-    <button id="restartBtn">もう一度</button>
+<div id="info">
+    位置: (0.00, 0.00, 0.00) | f(z) = 0.00 + 0.00i
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-    // フルスクリーン要求
-    function requestFullscreen() {
-        const elem = document.documentElement;
-        if (elem.requestFullscreen) {
-            elem.requestFullscreen().catch(() => {});
-        } else if (elem.webkitRequestFullscreen) {
-            elem.webkitRequestFullscreen();
-        } else if (elem.mozRequestFullScreen) {
-            elem.mozRequestFullScreen();
-        } else if (elem.msRequestFullscreen) {
-            elem.msRequestFullscreen();
-        }
-    }
-    
-    // アドレスバーを隠す
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            window.scrollTo(0, 1);
-        }, 0);
-    });
-    
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-    
-    // ゲーム状態
-    const game = {
-        score: 0,
-        questionNum: 0,
-        floor: 1,
-        questionsPerFloor: 10,
-        isGameOver: false,
-        timeLeft: 45.00,
-        baseTime: 45.00,
-        correctAnswers: 0,
-        totalQuestions: 0,
-        currentAnswer: '',
-        currentQuestion: null
+    // Game state
+    const state = {
+        mode: 'real', // 'real', 'imag', 'abs'
+        func: 'z2', // 'z2', 'z3', 'exp'
+        fixedAxis: true,
+        fixedValue: 0,
+        isMobile: false
     };
     
-    // 敵タイプ
-    const enemyTypes = {
-        RED: {
-            name: '赤い敵',
-            color: '#ef4444',
-            effect: 'REQUIRE_KEY',
-            duration: 180
-        },
-        YELLOW: {
-            name: '黄色い敵',
-            color: '#f59e0b',
-            effect: 'FORBID_KEYS',
-            duration: 60  // 1秒に短縮
+    // Scene setup
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x1a1a2e);
+    scene.fog = new THREE.Fog(0x1a1a2e, 30, 150);
+    
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
+    camera.position.set(0, 5, 10);
+    
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    
+    // Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 20, 10);
+    scene.add(directionalLight);
+    
+    // Complex function computation
+    function complexFunc(x, y, funcType) {
+        const z = { re: x, im: y };
+        let result = { re: 0, im: 0 };
+        
+        switch(funcType) {
+            case 'z2':
+                result.re = z.re * z.re - z.im * z.im;
+                result.im = 2 * z.re * z.im;
+                break;
+            case 'z3':
+                const r2 = z.re * z.re - z.im * z.im;
+                const i2 = 2 * z.re * z.im;
+                result.re = r2 * z.re - i2 * z.im;
+                result.im = r2 * z.im + i2 * z.re;
+                break;
+            case 'exp':
+                const expRe = Math.exp(z.re);
+                result.re = expRe * Math.cos(z.im);
+                result.im = expRe * Math.sin(z.im);
+                break;
         }
+        
+        return result;
+    }
+    
+    function getHeight(x, z) {
+        // x = Re(z), z = Im(z) in 3D space
+        const result = complexFunc(x, z, state.func);
+        
+        switch(state.mode) {
+            case 'real':
+                return result.re;
+            case 'imag':
+                return result.im;
+            case 'abs':
+                return Math.sqrt(result.re * result.re + result.im * result.im);
+        }
+    }
+    
+    // Create surface
+    let surface;
+    
+    function createSurface() {
+        if (surface) {
+            scene.remove(surface);
+            surface.geometry.dispose();
+            surface.material.dispose();
+        }
+        
+        if (!state.fixedAxis) {
+            // Non-fixed mode: (Re(z), Im(z), f(z)) surface
+            const resolution = state.isMobile ? 50 : 80;
+            const size = 40;
+            const geometry = new THREE.PlaneGeometry(size, size, resolution, resolution);
+            
+            const positions = geometry.attributes.position.array;
+            const colors = [];
+            
+            for (let i = 0; i < positions.length; i += 3) {
+                const x = positions[i];     // Re(z)
+                const z = positions[i + 1]; // Im(z)
+                
+                const height = getHeight(x, z);
+                positions[i + 2] = Math.max(-10, Math.min(10, height));
+                
+                // Color based on height - blue to white to red gradient
+                const t = (height + 10) / 20; // normalize to 0-1
+                let color;
+                if (t < 0.5) {
+                    // Blue to white
+                    const s = t * 2;
+                    color = new THREE.Color(s, s, 1);
+                } else {
+                    // White to red
+                    const s = (t - 0.5) * 2;
+                    color = new THREE.Color(1, 1 - s, 1 - s);
+                }
+                colors.push(color.r, color.g, color.b);
+            }
+            
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+            geometry.computeVertexNormals();
+            
+            const material = new THREE.MeshPhongMaterial({
+                vertexColors: true,
+                side: THREE.DoubleSide,
+                shininess: 30,
+                wireframe: false
+            });
+            
+            surface = new THREE.Mesh(geometry, material);
+            surface.rotation.x = -Math.PI / 2;
+            scene.add(surface);
+            
+            // Add wireframe
+            wireframeObj = new THREE.LineSegments(
+                new THREE.WireframeGeometry(geometry),
+                new THREE.LineBasicMaterial({ color: 0x888888, opacity: 0.5, transparent: true })
+            );
+            wireframeObj.rotation.x = -Math.PI / 2;
+            scene.add(wireframeObj);
+        } else {
+            // Fixed mode: Im(z) = fixedValue, draw (Re(z), Re(f), Im(f)) curve
+            const resolution = state.isMobile ? 300 : 500;
+            const range = 20;
+            
+            const points = [];
+            const colors = [];
+            
+            for (let i = 0; i <= resolution; i++) {
+                const t = (i / resolution) * 2 - 1;
+                const reZ = t * range; // Re(z) from -range to +range
+                const imZ = state.fixedValue; // Im(z) fixed
+                
+                const result = complexFunc(reZ, imZ, state.func);
+                
+                // Position: (Re(z), Re(f), Im(f))
+                points.push(new THREE.Vector3(
+                    reZ,           // X: Re(z)
+                    result.re,     // Y: Re(f)
+                    result.im      // Z: Im(f)
+                ));
+                
+                // Color based on |f|
+                const mag = Math.sqrt(result.re * result.re + result.im * result.im);
+                const t_color = Math.min(mag / 10, 1);
+                let color;
+                if (t_color < 0.5) {
+                    const s = t_color * 2;
+                    color = new THREE.Color(s, s, 1);
+                } else {
+                    const s = (t_color - 0.5) * 2;
+                    color = new THREE.Color(1, 1 - s, 1 - s);
+                }
+                colors.push(color);
+            }
+            
+            // Add tube geometry for better visibility
+            const curve = new THREE.CatmullRomCurve3(points);
+            curve.curveType = 'catmullrom';
+            curve.tension = 0.5;
+            
+            const tubeGeometry = new THREE.TubeGeometry(
+                curve,
+                resolution * 2,
+                0.15,
+                16,
+                false
+            );
+            
+            // Create color attribute for tube
+            const tubeColors = new Float32Array(tubeGeometry.attributes.position.count * 3);
+            const tubePositions = tubeGeometry.attributes.position.array;
+            
+            for (let i = 0; i < tubePositions.length; i += 3) {
+                const x = tubePositions[i];
+                const y = tubePositions[i + 1];
+                const z = tubePositions[i + 2];
+                
+                // Find closest point on curve to determine color
+                const mag = Math.sqrt(y * y + z * z);
+                const t_color = Math.min(mag / 10, 1);
+                
+                let color;
+                if (t_color < 0.5) {
+                    const s = t_color * 2;
+                    color = new THREE.Color(s, s, 1);
+                } else {
+                    const s = (t_color - 0.5) * 2;
+                    color = new THREE.Color(1, 1 - s, 1 - s);
+                }
+                
+                tubeColors[i] = color.r;
+                tubeColors[i + 1] = color.g;
+                tubeColors[i + 2] = color.b;
+            }
+            
+            tubeGeometry.setAttribute('color', new THREE.BufferAttribute(tubeColors, 3));
+            
+            const tubeMaterial = new THREE.MeshPhongMaterial({
+                vertexColors: true,
+                shininess: 60,
+                specular: 0x444444
+            });
+            
+            surface = new THREE.Mesh(tubeGeometry, tubeMaterial);
+            scene.add(surface);
+        }
+    }
+    
+    // Player controls
+    const keys = {};
+    const moveSpeed = 0.2;
+    const runMultiplier = 1.8;
+    const mouseLookSpeed = 0.003;
+    const touchLookSpeed = 0.008;
+    
+    let pitch = 0;
+    let yaw = 0;
+    
+    // Virtual joystick state
+    const joysticks = {
+        left: { active: false, x: 0, y: 0, touchId: null }
     };
     
-    let currentEffect = null;
-    let effectTimer = 0;
-    let requiredKey = null;
-    let countdownActive = false;
-    let countdownTimer = 0;
-    let countdownSeconds = 0;
+    // Camera touch control
+    let cameraTouchId = null;
+    let lastTouchX = 0;
+    let lastTouchY = 0;
     
-    // 難易度設定（階層による）- 高校レベル
-    function getDifficulty() {
-        const floor = game.floor;
-        let config = {
-            maxNum: 100,
-            multiplyMax: 12,
-            operations: ['+', '-', '×', '÷'],
-            advanced: []
-        };
-        
-        // 階層1: 基本四則演算
-        if (floor === 1) {
-            config.maxNum = 50;
-            config.multiplyMax = 12;
-            config.operations = ['+', '-', '×', '÷'];
-        }
-        // 階層2: 平方根追加
-        else if (floor === 2) {
-            config.maxNum = 100;
-            config.multiplyMax = 15;
-            config.operations = ['+', '-', '×', '÷', '√'];
-        }
-        // 階層3: 累乗追加
-        else if (floor === 3) {
-            config.maxNum = 50;
-            config.multiplyMax = 12;
-            config.operations = ['+', '-', '×', '÷', '√', '^'];
-        }
-        // 階層4: 因数分解的な問題
-        else if (floor === 4) {
-            config.maxNum = 100;
-            config.multiplyMax = 15;
-            config.operations = ['+', '-', '×', '÷', '√', '^', 'factor'];
-        }
-        // 階層5以降: すべて混合、難易度上昇
-        else {
-            config.maxNum = Math.min(200 + floor * 50, 1000);
-            config.multiplyMax = Math.min(15 + floor, 25);
-            config.operations = ['+', '-', '×', '÷', '√', '^', 'factor'];
-        }
-        
-        return config;
+    // Detect mobile
+    state.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (state.isMobile) {
+        document.getElementById('leftJoystick').classList.add('active');
     }
     
-    // 問題生成 - 高校レベル
-    function generateQuestion() {
-        const config = getDifficulty();
-        const operations = config.operations;
-        const op = operations[Math.floor(Math.random() * operations.length)];
-        let num1, num2, answer, questionText;
+    // Joystick handlers
+    function handleJoystickStart(e, side) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const joystick = side === 'left' ? joysticks.left : joysticks.right;
         
-        const maxNum = config.maxNum;
-        
-        switch(op) {
-            case '+':
-                num1 = Math.floor(Math.random() * maxNum) + 10;
-                num2 = Math.floor(Math.random() * maxNum) + 10;
-                answer = num1 + num2;
-                questionText = `${num1} + ${num2} = ?`;
-                break;
+        joystick.active = true;
+        joystick.touchId = touch.identifier;
+        updateJoystick(touch, side);
+    }
+    
+    function handleJoystickMove(e) {
+        e.preventDefault();
+        for (let touch of e.touches) {
+            if (touch.identifier === joysticks.left.touchId) {
+                updateJoystick(touch, 'left');
+            } else if (touch.identifier === cameraTouchId) {
+                // Camera control
+                const deltaX = touch.clientX - lastTouchX;
+                const deltaY = touch.clientY - lastTouchY;
                 
-            case '-':
-                num1 = Math.floor(Math.random() * maxNum) + maxNum;
-                num2 = Math.floor(Math.random() * num1) + 10;
-                answer = num1 - num2;
-                questionText = `${num1} - ${num2} = ?`;
-                break;
+                yaw -= deltaX * touchLookSpeed;
+                pitch -= deltaY * touchLookSpeed;
+                // Remove pitch clamping for free rotation
                 
-            case '×':
-                num1 = Math.floor(Math.random() * config.multiplyMax) + 2;
-                num2 = Math.floor(Math.random() * config.multiplyMax) + 2;
-                answer = num1 * num2;
-                questionText = `${num1} × ${num2} = ?`;
-                break;
-                
-            case '÷':
-                num2 = Math.floor(Math.random() * config.multiplyMax) + 2;
-                answer = Math.floor(Math.random() * config.multiplyMax) + 2;
-                num1 = num2 * answer;
-                questionText = `${num1} ÷ ${num2} = ?`;
-                break;
-                
-            case '√':
-                // 完全平方数のルート
-                const base = Math.floor(Math.random() * 15) + 2;
-                num1 = base * base;
-                answer = base;
-                questionText = `√${num1} = ?`;
-                break;
-                
-            case '^':
-                // 累乗計算
-                const baseNum = Math.floor(Math.random() * 10) + 2;
-                const exponent = Math.floor(Math.random() * 3) + 2; // 2乗か3乗
-                answer = Math.pow(baseNum, exponent);
-                questionText = `${baseNum}^${exponent} = ?`;
-                break;
-                
-            case 'factor':
-                // 因数分解的: a×b の形で a を求める
-                const factor1 = Math.floor(Math.random() * 12) + 3;
-                const factor2 = Math.floor(Math.random() * 12) + 3;
-                const product = factor1 * factor2;
-                answer = factor1;
-                questionText = `${product} = ? × ${factor2}`;
-                break;
-                
-            default:
-                // デフォルトは加算
-                num1 = Math.floor(Math.random() * maxNum) + 1;
-                num2 = Math.floor(Math.random() * maxNum) + 1;
-                answer = num1 + num2;
-                questionText = `${num1} + ${num2} = ?`;
-        }
-        
-        return {
-            text: questionText,
-            answer: answer
-        };
-    }
-    
-    // 新しい問題
-    function newQuestion() {
-        game.currentQuestion = generateQuestion();
-        game.currentAnswer = '';
-        document.getElementById('questionText').textContent = game.currentQuestion.text;
-        document.getElementById('currentAnswer').textContent = '_';
-    }
-    
-    // 背景描画
-    function drawBackground() {
-        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradient.addColorStop(0, '#f5f7fa');
-        gradient.addColorStop(0.5, '#c3cfe2');
-        gradient.addColorStop(1, '#e0e7ff');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        ctx.strokeStyle = 'rgba(99, 102, 241, 0.08)';
-        ctx.lineWidth = 1.5;
-        const hexSize = 50;
-        
-        for (let y = -hexSize; y < canvas.height + hexSize; y += hexSize * 1.5) {
-            for (let x = -hexSize; x < canvas.width + hexSize; x += hexSize * Math.sqrt(3)) {
-                const offsetX = (Math.floor(y / (hexSize * 1.5)) % 2) * (hexSize * Math.sqrt(3) / 2);
-                drawHexagon(x + offsetX, y, hexSize / 2);
-            }
-        }
-        
-        const gradient2 = ctx.createRadialGradient(
-            canvas.width/2, canvas.height/2, 0,
-            canvas.width/2, canvas.height/2, canvas.width * 0.7
-        );
-        gradient2.addColorStop(0, 'rgba(255, 255, 255, 0)');
-        gradient2.addColorStop(0.7, 'rgba(99, 102, 241, 0.03)');
-        gradient2.addColorStop(1, 'rgba(99, 102, 241, 0.08)');
-        ctx.fillStyle = gradient2;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-    
-    function drawHexagon(x, y, size) {
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-            const angle = (Math.PI / 3) * i;
-            const hx = x + size * Math.cos(angle);
-            const hy = y + size * Math.sin(angle);
-            if (i === 0) {
-                ctx.moveTo(hx, hy);
-            } else {
-                ctx.lineTo(hx, hy);
-            }
-        }
-        ctx.closePath();
-        ctx.stroke();
-    }
-    
-    // タイマー更新
-    let lastTimeAdd = false;
-    function updateTimer() {
-        if (game.isGameOver) return;
-        
-        const oldTime = game.timeLeft;
-        game.timeLeft -= 1/60;
-        
-        const timerEl = document.getElementById('timer');
-        timerEl.textContent = game.timeLeft.toFixed(2);
-        
-        if (game.timeLeft <= 0) {
-            gameOver('時間切れ！');
-        }
-    }
-    
-    function flashTimer(isAdd) {
-        const timerEl = document.getElementById('timer');
-        timerEl.classList.remove('time-add', 'time-sub');
-        void timerEl.offsetWidth; // リフロー
-        timerEl.classList.add(isAdd ? 'time-add' : 'time-sub');
-    }
-    
-    // カウントダウン表示
-    function showCountdown(enemyType) {
-        countdownActive = true;
-        countdownTimer = 90; // 1.5秒
-        countdownSeconds = 2; // 初期表示
-        
-        const countdownEl = document.getElementById('warningCountdown');
-        const numEl = document.getElementById('countdownNum');
-        numEl.textContent = countdownSeconds;
-        countdownEl.style.display = 'block';
-        
-        window.pendingEnemy = enemyType;
-    }
-    
-    // カウントダウン更新
-    function updateCountdown() {
-        if (!countdownActive) return;
-        
-        countdownTimer--;
-        const newSeconds = Math.ceil(countdownTimer / 60);
-        
-        // 秒が変わったら更新
-        if (newSeconds !== countdownSeconds && newSeconds >= 0) {
-            countdownSeconds = newSeconds;
-            document.getElementById('countdownNum').textContent = countdownSeconds;
-        }
-        
-        if (countdownTimer <= 0) {
-            document.getElementById('warningCountdown').style.display = 'none';
-            countdownActive = false;
-            
-            if (window.pendingEnemy) {
-                activateEnemy(window.pendingEnemy);
-                window.pendingEnemy = null;
+                lastTouchX = touch.clientX;
+                lastTouchY = touch.clientY;
             }
         }
     }
     
-    // 敵アクティブ化
-    function activateEnemy(type) {
-        currentEffect = type;
-        effectTimer = type.duration;
+    function handleJoystickEnd(e, side) {
+        const joystick = side === 'left' ? joysticks.left : joysticks.right;
+        joystick.active = false;
+        joystick.x = 0;
+        joystick.y = 0;
+        joystick.touchId = null;
         
-        switch(type.effect) {
-            case 'REQUIRE_KEY':
-                requiredKey = Math.floor(Math.random() * 10);
-                updateKeyboardState();
-                break;
-            case 'FORBID_KEYS':
-                updateKeyboardState();
-                break;
-        }
+        const handle = document.querySelector(`#${side}Joystick .joystick-handle`);
+        handle.style.transform = 'translate(-50%, -50%)';
     }
     
-    // キーボード状態更新
-    function updateKeyboardState() {
-        const keys = document.querySelectorAll('.key-btn');
-        keys.forEach(key => {
-            const num = parseInt(key.dataset.num);
-            if (isNaN(num)) return;
-            
-            key.classList.remove('required', 'forbidden', 'disabled');
-            
-            if (!currentEffect) return;
-            
-            switch(currentEffect.effect) {
-                case 'REQUIRE_KEY':
-                    if (num === requiredKey) {
-                        key.classList.add('required');
-                    }
-                    break;
-                case 'FORBID_KEYS':
-                    key.classList.add('forbidden');
-                    break;
-            }
-        });
-    }
-    
-    // エフェクト更新
-    function updateEffect() {
-        if (!currentEffect) return;
+    function updateJoystick(touch, side) {
+        const element = document.getElementById(side + 'Joystick');
+        const rect = element.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
         
-        effectTimer--;
+        let deltaX = touch.clientX - centerX;
+        let deltaY = touch.clientY - centerY;
         
-        if (effectTimer <= 0) {
-            if (currentEffect.effect === 'REQUIRE_KEY') {
-                gameOver(`${requiredKey}を押さなかった！`);
-                return;
-            }
-            
-            currentEffect = null;
-            requiredKey = null;
-            updateKeyboardState();
-        }
-    }
-    
-    // 敵スポーン
-    function spawnEnemy() {
-        if (game.isGameOver || countdownActive || currentEffect) return;
+        const maxDistance = 35;
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         
-        let availableEnemies = [];
-        
-        if (game.floor === 1) {
-            availableEnemies = [enemyTypes.RED];
-        } else {
-            availableEnemies = [enemyTypes.RED, enemyTypes.YELLOW];
+        if (distance > maxDistance) {
+            deltaX = (deltaX / distance) * maxDistance;
+            deltaY = (deltaY / distance) * maxDistance;
         }
         
-        const type = availableEnemies[Math.floor(Math.random() * availableEnemies.length)];
+        const joystick = side === 'left' ? joysticks.left : joysticks.right;
+        joystick.x = deltaX / maxDistance;
+        joystick.y = deltaY / maxDistance;
         
-        if (type.effect === 'FORBID_KEYS') {
-            showCountdown(type);
-        } else {
-            activateEnemy(type);
-        }
+        const handle = element.querySelector('.joystick-handle');
+        handle.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
     }
     
-    let enemySpawnTimer = 0;
-    function checkEnemySpawn() {
-        if (game.isGameOver) return;
-        
-        enemySpawnTimer++;
-        const spawnInterval = 180 + Math.random() * 240;
-        
-        if (enemySpawnTimer > spawnInterval) {
-            spawnEnemy();
-            enemySpawnTimer = 0;
-        }
-    }
+    document.getElementById('leftJoystick').addEventListener('touchstart', (e) => handleJoystickStart(e, 'left'));
     
-    // キー入力
-    document.querySelectorAll('.key-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (game.isGameOver) return;
+    // Touch controls for camera (anywhere outside joystick)
+    document.addEventListener('touchstart', (e) => {
+        if (!state.isMobile) return;
+        
+        for (let touch of e.touches) {
+            const element = document.elementFromPoint(touch.clientX, touch.clientY);
             
-            if (!btn.dataset.num) return;
-            const num = parseInt(btn.dataset.num);
-            
-            if (currentEffect && currentEffect.effect === 'FORBID_KEYS') {
-                gameOver('キーボードを触ってしまった！');
-                return;
-            }
-            
-            if (currentEffect && currentEffect.effect === 'REQUIRE_KEY') {
-                if (num === requiredKey) {
-                    currentEffect = null;
-                    requiredKey = null;
-                    updateKeyboardState();
-                    game.score += 50 * game.floor;
-                    document.getElementById('score').textContent = game.score;
-                    flashTimer(true);
-                    return;
+            // If touch is not on joystick or UI, use for camera
+            if (!element.closest('#leftJoystick') && !element.closest('#ui')) {
+                if (cameraTouchId === null) {
+                    cameraTouchId = touch.identifier;
+                    lastTouchX = touch.clientX;
+                    lastTouchY = touch.clientY;
                 }
             }
-            
-            if (game.currentAnswer.length < 5) {
-                game.currentAnswer += num;
-                document.getElementById('currentAnswer').textContent = game.currentAnswer || '_';
-            }
-        });
-    });
-    
-    // 決定ボタン
-    document.getElementById('submitBtn').addEventListener('click', () => {
-        if (game.isGameOver || !game.currentAnswer) return;
-        
-        game.totalQuestions++;
-        const userAnswer = parseInt(game.currentAnswer);
-        
-        if (userAnswer === game.currentQuestion.answer) {
-            game.correctAnswers++;
-            game.score += 100 * game.floor;
-            game.timeLeft = Math.min(game.timeLeft + 2, game.baseTime + 5);
-            flashTimer(true);
-            game.questionNum++;
-            
-            if (game.questionNum >= game.questionsPerFloor) {
-                showFloorTransition();
-                return;
-            }
-            
-            document.getElementById('questionNum').textContent = game.questionNum;
-            document.getElementById('score').textContent = game.score;
-        } else {
-            game.timeLeft = Math.max(game.timeLeft - 3, 0.5);
-            flashTimer(false);
         }
-        
-        newQuestion();
     });
+    document.addEventListener('touchmove', handleJoystickMove);
     
-    // バックスペース
-    document.getElementById('backspaceBtn').addEventListener('click', () => {
-        if (game.currentAnswer.length > 0) {
-            game.currentAnswer = game.currentAnswer.slice(0, -1);
-            document.getElementById('currentAnswer').textContent = game.currentAnswer || '_';
+    document.getElementById('leftJoystick').addEventListener('touchend', (e) => handleJoystickEnd(e, 'left'));
+    
+    document.addEventListener('touchend', (e) => {
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === cameraTouchId) {
+                cameraTouchId = null;
+            }
         }
     });
     
-    // 階層遷移
-    function showFloorTransition() {
-        game.floor++;
-        game.questionNum = 0;
-        game.baseTime = Math.min(45 + (game.floor - 1) * 3, 60);
-        game.timeLeft = game.baseTime;
+    // Keyboard controls
+    window.addEventListener('keydown', (e) => {
+        keys[e.key.toLowerCase()] = true;
         
-        const transitionEl = document.getElementById('floorTransition');
-        document.getElementById('newFloorNum').textContent = game.floor;
-        
-        if (game.floor === 2) {
-            const previewEl = document.getElementById('newEnemyPreview');
-            previewEl.innerHTML = '';
-            for (let i = 0; i < 3; i++) {
-                const key = document.createElement('div');
-                key.className = 'key-forbidden';
-                key.textContent = [1,2,3,4,5,6,7,8,9][i];
-                previewEl.appendChild(key);
-            }
-            document.getElementById('newEnemyDesc').textContent = 
-                'キーボードが黄色く震えている間は、どのキーも押してはいけません！';
-            transitionEl.style.display = 'flex';
-        } else {
-            continueToNextFloor();
+        // Function switching
+        if (e.key === 'q') setFunc('z2');
+        if (e.key === 'e') setFunc('z3');
+        if (e.key === 'r') setFunc('exp');
+    });
+    
+    window.addEventListener('keyup', (e) => {
+        keys[e.key.toLowerCase()] = false;
+    });
+    
+    // Mouse controls
+    let isPointerLocked = false;
+    
+    canvas.addEventListener('click', () => {
+        if (!state.isMobile) {
+            canvas.requestPointerLock();
         }
-    }
+    });
     
-    function continueToNextFloor() {
-        document.getElementById('floorTransition').style.display = 'none';
-        document.getElementById('floor').textContent = game.floor;
-        document.getElementById('questionNum').textContent = game.questionNum;
-        newQuestion();
-    }
+    document.addEventListener('pointerlockchange', () => {
+        isPointerLocked = document.pointerLockElement === canvas;
+    });
     
-    document.getElementById('continueBtn').addEventListener('click', continueToNextFloor);
-    
-    // ゲームオーバー
-    function gameOver(reason) {
-        if (game.isGameOver) return;
-        game.isGameOver = true;
-        document.getElementById('deathReason').textContent = reason;
-        document.getElementById('finalFloor').textContent = game.floor;
-        document.getElementById('finalScore').textContent = game.score;
-        document.getElementById('gameOver').style.display = 'block';
-    }
-    
-    document.getElementById('restartBtn').onclick = () => location.reload();
-    
-    // ゲーム開始
-    function startGame() {
-        requestFullscreen();
-        document.getElementById('stageSelect').style.display = 'none';
-        showPrepCountdown();
-    }
-    
-    function showPrepCountdown() {
-        const prepEl = document.getElementById('prepCountdown');
-        const countEl = prepEl.querySelector('.count');
-        prepEl.style.display = 'flex';
-        
-        let count = 3;
-        countEl.textContent = count;
-        
-        const interval = setInterval(() => {
-            count--;
-            if (count > 0) {
-                countEl.textContent = count;
-            } else {
-                countEl.textContent = 'START!';
-                setTimeout(() => {
-                    prepEl.style.display = 'none';
-                    newQuestion();
-                    gameLoop();
-                }, 500);
-                clearInterval(interval);
-            }
-        }, 1000);
-    }
-    
-    document.getElementById('startGameBtn').addEventListener('click', startGame);
-    
-    // ゲームループ
-    function gameLoop() {
-        if (!game.isGameOver) {
-            drawBackground();
-            updateTimer();
-            updateEffect();
-            updateCountdown();
-            checkEnemySpawn();
+    document.addEventListener('mousemove', (e) => {
+        if (isPointerLocked) {
+            yaw -= e.movementX * mouseLookSpeed;
+            pitch -= e.movementY * mouseLookSpeed;
+            // Remove pitch clamping for free rotation
         }
-        requestAnimationFrame(gameLoop);
+    });
+    
+    // UI handlers
+    function setFunc(func) {
+        state.func = func;
+        document.getElementById('funcZ2').classList.toggle('active', func === 'z2');
+        document.getElementById('funcZ3').classList.toggle('active', func === 'z3');
+        document.getElementById('funcExp').classList.toggle('active', func === 'exp');
+        createSurface();
     }
+    
+    document.getElementById('funcZ2').addEventListener('click', () => setFunc('z2'));
+    document.getElementById('funcZ3').addEventListener('click', () => setFunc('z3'));
+    document.getElementById('funcExp').addEventListener('click', () => setFunc('exp'));
+    
+    document.getElementById('fixedValueSlider').addEventListener('input', (e) => {
+        state.fixedValue = parseFloat(e.target.value);
+        document.getElementById('sliderLabel').textContent = `Im(z) 固定値: ${state.fixedValue.toFixed(2)}`;
+        createSurface();
+    });
+    
+    // Update loop
+    function updatePlayer() {
+        // Camera-relative movement vectors
+        const forward = new THREE.Vector3();
+        const right = new THREE.Vector3();
+        
+        // Get camera's forward and right vectors
+        camera.getWorldDirection(forward);
+        right.crossVectors(camera.up, forward).normalize();
+        
+        // For horizontal movement, we want to move parallel to the ground
+        const forwardFlat = new THREE.Vector3(forward.x, 0, forward.z).normalize();
+        const rightFlat = new THREE.Vector3(right.x, 0, right.z).normalize();
+        
+        // Calculate speed (run if shift is held)
+        const currentSpeed = keys['shift'] ? moveSpeed * runMultiplier : moveSpeed;
+        
+        // Keyboard movement
+        if (keys['w']) camera.position.addScaledVector(forwardFlat, currentSpeed);
+        if (keys['s']) camera.position.addScaledVector(forwardFlat, -currentSpeed);
+        if (keys['a']) camera.position.addScaledVector(rightFlat, currentSpeed);
+        if (keys['d']) camera.position.addScaledVector(rightFlat, -currentSpeed);
+        if (keys[' ']) camera.position.y += currentSpeed;
+        if (keys['control']) camera.position.y -= currentSpeed;
+        
+        // Joystick movement (mobile)
+        if (state.isMobile && joysticks.left.active) {
+            camera.position.addScaledVector(forwardFlat, -joysticks.left.y * moveSpeed * 1.5);
+            camera.position.addScaledVector(rightFlat, joysticks.left.x * moveSpeed * 1.5);
+        }
+        
+        // Update camera rotation
+        camera.rotation.order = 'YXZ';
+        camera.rotation.y = yaw;
+        camera.rotation.x = pitch;
+        
+        // Update info display
+        const pos = camera.position;
+        const fResult = complexFunc(pos.x, state.fixedValue, state.func);
+        document.getElementById('info').textContent = 
+            `z = ${pos.x.toFixed(2)} + ${state.fixedValue.toFixed(2)}i | ` +
+            `f(z) = ${fResult.re.toFixed(2)} + ${fResult.im.toFixed(2)}i`;
+    }
+    
+    function animate() {
+        requestAnimationFrame(animate);
+        updatePlayer();
+        renderer.render(scene, camera);
+    }
+    
+    // Handle resize
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    
+    // Initialize
+    createSurface();
+    animate();
 </script>
 ```
 
