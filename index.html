@@ -3,7 +3,9 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>複素関数エクスプローラー</title>
     <style>
         * {
@@ -18,6 +20,8 @@
         overflow: hidden;
         touch-action: none;
         overscroll-behavior: none;
+        height: 100vh;
+        height: 100dvh; /* Dynamic viewport height */
     }
     
     body {
@@ -25,12 +29,16 @@
         font-family: 'Arial', sans-serif;
         touch-action: none;
         overscroll-behavior: none;
+        height: 100vh;
+        height: 100dvh;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
     
     #canvas {
         display: block;
         width: 100vw;
         height: 100vh;
+        height: 100dvh;
     }
     
     #ui {
@@ -159,6 +167,9 @@
     <div style="margin-top: 10px; font-size: 11px; opacity: 0.8;">
         <div>PC: WASD移動, マウス視点</div>
         <div>Space上昇, Ctrl下降, Shift走る</div>
+    </div>
+    <div class="button-group">
+        <button id="fullscreenBtn" style="width: 100%; background: rgba(50, 200, 50, 0.8); margin-top: 8px;">📱 全画面表示</button>
     </div>
 </div>
 
@@ -307,16 +318,19 @@
         
         switch(funcType) {
             case 'z2':
+                // z^2 = (x+iy)^2 = x^2 - y^2 + 2xyi
                 result.re = z.re * z.re - z.im * z.im;
                 result.im = 2 * z.re * z.im;
                 break;
             case 'z3':
-                const r2 = z.re * z.re - z.im * z.im;
-                const i2 = 2 * z.re * z.im;
-                result.re = r2 * z.re - i2 * z.im;
-                result.im = r2 * z.im + i2 * z.re;
+                // z^3 = z^2 * z
+                const z2_re = z.re * z.re - z.im * z.im;
+                const z2_im = 2 * z.re * z.im;
+                result.re = z2_re * z.re - z2_im * z.im;
+                result.im = z2_re * z.im + z2_im * z.re;
                 break;
             case 'exp':
+                // e^z = e^(x+iy) = e^x * (cos(y) + i*sin(y))
                 const expRe = Math.exp(z.re);
                 result.re = expRe * Math.cos(z.im);
                 result.im = expRe * Math.sin(z.im);
@@ -457,6 +471,9 @@
     let lastTouchX = 0;
     let lastTouchY = 0;
     
+    // Track where each touch started to prevent crossover
+    const touchStartPositions = new Map();
+    
     // Detect mobile
     state.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
@@ -476,6 +493,9 @@
         
         joystick.active = true;
         joystick.touchId = touch.identifier;
+        
+        // Mark this touch as belonging to joystick
+        touchStartPositions.set(touch.identifier, 'joystick');
         
         // Store initial joystick base position
         const element = document.getElementById(side + 'Joystick');
@@ -497,6 +517,9 @@
                 joystick.x = 0;
                 joystick.y = 0;
                 joystick.touchId = null;
+                
+                // Clean up touch tracking
+                touchStartPositions.delete(touch.identifier);
                 
                 const handle = document.querySelector(`#${side}Joystick .joystick-handle`);
                 handle.style.transform = 'translate(-50%, -50%)';
@@ -529,21 +552,22 @@
             const newBaseX = joystickBaseX + Math.cos(angle) * moveDistance;
             const newBaseY = joystickBaseY + Math.sin(angle) * moveDistance;
             
-            // Update base position
-            joystickBaseX = newBaseX;
-            joystickBaseY = newBaseY;
+            // Constrain joystick to screen bounds
+            const minX = 60;
+            const maxX = window.innerWidth - 60;
+            const minY = 60;
+            const maxY = window.innerHeight - 60;
+            
+            joystickBaseX = Math.max(minX, Math.min(maxX, newBaseX));
+            joystickBaseY = Math.max(minY, Math.min(maxY, newBaseY));
             
             // Update element position
-            const rect = element.getBoundingClientRect();
-            const currentLeft = parseFloat(element.style.left) || 30;
-            const currentBottom = parseFloat(element.style.bottom) || 30;
-            
-            element.style.left = `${newBaseX - rect.width / 2}px`;
-            element.style.bottom = `${window.innerHeight - newBaseY - rect.height / 2}px`;
+            element.style.left = `${joystickBaseX - 60}px`;
+            element.style.bottom = `${window.innerHeight - joystickBaseY - 60}px`;
             
             // Recalculate delta from new base
-            deltaX = touch.clientX - newBaseX;
-            deltaY = touch.clientY - newBaseY;
+            deltaX = touch.clientX - joystickBaseX;
+            deltaY = touch.clientY - joystickBaseY;
         }
         
         // Clamp handle position within followRadius
@@ -591,7 +615,7 @@
         
         for (let touch of e.touches) {
             // Skip if this touch is already assigned to joystick
-            if (touch.identifier === joysticks.left.touchId) {
+            if (touchStartPositions.get(touch.identifier) === 'joystick') {
                 continue;
             }
             
@@ -602,6 +626,7 @@
                 e.preventDefault(); // Prevent scrolling
                 if (cameraTouchId === null) {
                     cameraTouchId = touch.identifier;
+                    touchStartPositions.set(touch.identifier, 'camera');
                     lastTouchX = touch.clientX;
                     lastTouchY = touch.clientY;
                 }
@@ -613,8 +638,9 @@
         if (!state.isMobile) return;
         
         for (let touch of e.touches) {
-            // Only process camera touch, never joystick touch
-            if (touch.identifier === cameraTouchId && touch.identifier !== joysticks.left.touchId) {
+            // Strictly check: only process if this touch is marked as camera AND is the active camera touch
+            if (touch.identifier === cameraTouchId && 
+                touchStartPositions.get(touch.identifier) === 'camera') {
                 e.preventDefault();
                 
                 const deltaX = touch.clientX - lastTouchX;
@@ -633,6 +659,7 @@
         for (let touch of e.changedTouches) {
             if (touch.identifier === cameraTouchId) {
                 cameraTouchId = null;
+                touchStartPositions.delete(touch.identifier);
             }
         }
     });
@@ -692,6 +719,14 @@
     document.getElementById('funcZ3').addEventListener('click', () => setFunc('z3'));
     document.getElementById('funcExp').addEventListener('click', () => setFunc('exp'));
     
+    document.getElementById('fullscreenBtn').addEventListener('click', () => {
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen();
+        } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+        }
+    });
+    
     document.getElementById('fixedValueSlider').addEventListener('input', (e) => {
         state.fixedValue = parseFloat(e.target.value);
         document.getElementById('sliderLabel').textContent = `Im(z) 固定値: ${state.fixedValue.toFixed(2)}`;
@@ -706,27 +741,24 @@
         
         // Get camera's forward and right vectors
         camera.getWorldDirection(forward);
+        forward.normalize();
         right.crossVectors(camera.up, forward).normalize();
-        
-        // For horizontal movement, we want to move parallel to the ground
-        const forwardFlat = new THREE.Vector3(forward.x, 0, forward.z).normalize();
-        const rightFlat = new THREE.Vector3(right.x, 0, right.z).normalize();
         
         // Calculate speed (run if shift is held)
         const currentSpeed = keys['shift'] ? moveSpeed * runMultiplier : moveSpeed;
         
-        // Keyboard movement
-        if (keys['w']) camera.position.addScaledVector(forwardFlat, currentSpeed);
-        if (keys['s']) camera.position.addScaledVector(forwardFlat, -currentSpeed);
-        if (keys['a']) camera.position.addScaledVector(rightFlat, currentSpeed);
-        if (keys['d']) camera.position.addScaledVector(rightFlat, -currentSpeed);
+        // Keyboard movement - now uses full 3D camera direction
+        if (keys['w']) camera.position.addScaledVector(forward, currentSpeed);
+        if (keys['s']) camera.position.addScaledVector(forward, -currentSpeed);
+        if (keys['a']) camera.position.addScaledVector(right, currentSpeed);
+        if (keys['d']) camera.position.addScaledVector(right, -currentSpeed);
         if (keys[' ']) camera.position.y += currentSpeed;
         if (keys['control']) camera.position.y -= currentSpeed;
         
-        // Joystick movement (mobile)
+        // Joystick movement (mobile) - also uses full 3D direction
         if (state.isMobile && joysticks.left.active) {
-            camera.position.addScaledVector(forwardFlat, -joysticks.left.y * moveSpeed * 1.5);
-            camera.position.addScaledVector(rightFlat, -joysticks.left.x * moveSpeed * 1.5);
+            camera.position.addScaledVector(forward, -joysticks.left.y * moveSpeed * 1.5);
+            camera.position.addScaledVector(right, -joysticks.left.x * moveSpeed * 1.5);
         }
         
         // Update camera rotation
