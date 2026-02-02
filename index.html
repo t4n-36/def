@@ -10,13 +10,21 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            overscroll-behavior: none;
         }
 
 ```
+    html {
+        overflow: hidden;
+        touch-action: none;
+        overscroll-behavior: none;
+    }
+    
     body {
         overflow: hidden;
         font-family: 'Arial', sans-serif;
         touch-action: none;
+        overscroll-behavior: none;
     }
     
     #canvas {
@@ -78,6 +86,8 @@
         bottom: 30px;
         display: none;
         touch-action: none;
+        z-index: 1000;
+        transition: left 0.1s ease-out, bottom 0.1s ease-out;
     }
     
     .joystick.active {
@@ -191,6 +201,105 @@
     directionalLight.position.set(10, 20, 10);
     scene.add(directionalLight);
     
+    // Add grid and axes
+    function createAxesAndGrid() {
+        const gridSize = 40;
+        const gridDivisions = 40;
+        
+        // Grid on XZ plane (ground)
+        const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x444444, 0x222222);
+        scene.add(gridHelper);
+        
+        // Main axes
+        const axesHelper = new THREE.AxesHelper(25);
+        scene.add(axesHelper);
+        
+        // Create thicker colored axes
+        const axesMaterial = {
+            x: new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 }),
+            y: new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 }),
+            z: new THREE.LineBasicMaterial({ color: 0x0000ff, linewidth: 2 })
+        };
+        
+        // X axis (red) - Re(z)
+        const xGeometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(-20, 0, 0),
+            new THREE.Vector3(20, 0, 0)
+        ]);
+        const xAxis = new THREE.Line(xGeometry, axesMaterial.x);
+        scene.add(xAxis);
+        
+        // Y axis (green) - Re(f) or Im(f)
+        const yGeometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, -20, 0),
+            new THREE.Vector3(0, 20, 0)
+        ]);
+        const yAxis = new THREE.Line(yGeometry, axesMaterial.y);
+        scene.add(yAxis);
+        
+        // Z axis (blue) - Im(z)
+        const zGeometry = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0, -20),
+            new THREE.Vector3(0, 0, 20)
+        ]);
+        const zAxis = new THREE.Line(zGeometry, axesMaterial.z);
+        scene.add(zAxis);
+        
+        // Add tick marks every 1 unit
+        const tickSize = 0.3;
+        const tickMaterial = new THREE.LineBasicMaterial({ color: 0xaaaaaa });
+        
+        for (let i = -20; i <= 20; i++) {
+            if (i === 0) continue; // Skip origin
+            
+            // X axis ticks
+            const xTickGeom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(i, -tickSize, 0),
+                new THREE.Vector3(i, tickSize, 0)
+            ]);
+            scene.add(new THREE.Line(xTickGeom, tickMaterial));
+            
+            // Y axis ticks
+            const yTickGeom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(-tickSize, i, 0),
+                new THREE.Vector3(tickSize, i, 0)
+            ]);
+            scene.add(new THREE.Line(yTickGeom, tickMaterial));
+            
+            // Z axis ticks
+            const zTickGeom = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, -tickSize, i),
+                new THREE.Vector3(0, tickSize, i)
+            ]);
+            scene.add(new THREE.Line(zTickGeom, tickMaterial));
+        }
+        
+        // Add small spheres at integer coordinates along axes for better visibility
+        const sphereGeometry = new THREE.SphereGeometry(0.08, 8, 8);
+        const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        
+        for (let i = -20; i <= 20; i += 5) {
+            if (i === 0) continue;
+            
+            // X axis markers
+            const xSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            xSphere.position.set(i, 0, 0);
+            scene.add(xSphere);
+            
+            // Y axis markers
+            const ySphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            ySphere.position.set(0, i, 0);
+            scene.add(ySphere);
+            
+            // Z axis markers
+            const zSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            zSphere.position.set(0, 0, i);
+            scene.add(zSphere);
+        }
+    }
+    
+    createAxesAndGrid();
+    
     // Complex function computation
     function complexFunc(x, y, funcType) {
         const z = { re: x, im: y };
@@ -241,145 +350,91 @@
             surface.material.dispose();
         }
         
-        if (!state.fixedAxis) {
-            // Non-fixed mode: (Re(z), Im(z), f(z)) surface
-            const resolution = state.isMobile ? 50 : 80;
-            const size = 40;
-            const geometry = new THREE.PlaneGeometry(size, size, resolution, resolution);
+        // Fixed mode: Im(z) = fixedValue, draw (Re(z), Re(f), Im(f)) curve
+        const resolution = state.isMobile ? 300 : 500;
+        const range = 20;
+        
+        const points = [];
+        const colors = [];
+        
+        for (let i = 0; i <= resolution; i++) {
+            const t = (i / resolution) * 2 - 1;
+            const reZ = t * range; // Re(z) from -range to +range
+            const imZ = state.fixedValue; // Im(z) fixed
             
-            const positions = geometry.attributes.position.array;
-            const colors = [];
+            const result = complexFunc(reZ, imZ, state.func);
             
-            for (let i = 0; i < positions.length; i += 3) {
-                const x = positions[i];     // Re(z)
-                const z = positions[i + 1]; // Im(z)
-                
-                const height = getHeight(x, z);
-                positions[i + 2] = Math.max(-10, Math.min(10, height));
-                
-                // Color based on height - blue to white to red gradient
-                const t = (height + 10) / 20; // normalize to 0-1
-                let color;
-                if (t < 0.5) {
-                    // Blue to white
-                    const s = t * 2;
-                    color = new THREE.Color(s, s, 1);
-                } else {
-                    // White to red
-                    const s = (t - 0.5) * 2;
-                    color = new THREE.Color(1, 1 - s, 1 - s);
-                }
-                colors.push(color.r, color.g, color.b);
+            // Position: (Re(z), Re(f), Im(f))
+            points.push(new THREE.Vector3(
+                reZ,           // X: Re(z)
+                result.re,     // Y: Re(f)
+                result.im      // Z: Im(f)
+            ));
+            
+            // Color based on |f|
+            const mag = Math.sqrt(result.re * result.re + result.im * result.im);
+            const t_color = Math.min(mag / 10, 1);
+            let color;
+            if (t_color < 0.5) {
+                const s = t_color * 2;
+                color = new THREE.Color(s, s, 1);
+            } else {
+                const s = (t_color - 0.5) * 2;
+                color = new THREE.Color(1, 1 - s, 1 - s);
             }
-            
-            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-            geometry.computeVertexNormals();
-            
-            const material = new THREE.MeshPhongMaterial({
-                vertexColors: true,
-                side: THREE.DoubleSide,
-                shininess: 30,
-                wireframe: false
-            });
-            
-            surface = new THREE.Mesh(geometry, material);
-            surface.rotation.x = -Math.PI / 2;
-            scene.add(surface);
-            
-            // Add wireframe
-            wireframeObj = new THREE.LineSegments(
-                new THREE.WireframeGeometry(geometry),
-                new THREE.LineBasicMaterial({ color: 0x888888, opacity: 0.5, transparent: true })
-            );
-            wireframeObj.rotation.x = -Math.PI / 2;
-            scene.add(wireframeObj);
-        } else {
-            // Fixed mode: Im(z) = fixedValue, draw (Re(z), Re(f), Im(f)) curve
-            const resolution = state.isMobile ? 300 : 500;
-            const range = 20;
-            
-            const points = [];
-            const colors = [];
-            
-            for (let i = 0; i <= resolution; i++) {
-                const t = (i / resolution) * 2 - 1;
-                const reZ = t * range; // Re(z) from -range to +range
-                const imZ = state.fixedValue; // Im(z) fixed
-                
-                const result = complexFunc(reZ, imZ, state.func);
-                
-                // Position: (Re(z), Re(f), Im(f))
-                points.push(new THREE.Vector3(
-                    reZ,           // X: Re(z)
-                    result.re,     // Y: Re(f)
-                    result.im      // Z: Im(f)
-                ));
-                
-                // Color based on |f|
-                const mag = Math.sqrt(result.re * result.re + result.im * result.im);
-                const t_color = Math.min(mag / 10, 1);
-                let color;
-                if (t_color < 0.5) {
-                    const s = t_color * 2;
-                    color = new THREE.Color(s, s, 1);
-                } else {
-                    const s = (t_color - 0.5) * 2;
-                    color = new THREE.Color(1, 1 - s, 1 - s);
-                }
-                colors.push(color);
-            }
-            
-            // Add tube geometry for better visibility
-            const curve = new THREE.CatmullRomCurve3(points);
-            curve.curveType = 'catmullrom';
-            curve.tension = 0.5;
-            
-            const tubeGeometry = new THREE.TubeGeometry(
-                curve,
-                resolution * 2,
-                0.15,
-                16,
-                false
-            );
-            
-            // Create color attribute for tube
-            const tubeColors = new Float32Array(tubeGeometry.attributes.position.count * 3);
-            const tubePositions = tubeGeometry.attributes.position.array;
-            
-            for (let i = 0; i < tubePositions.length; i += 3) {
-                const x = tubePositions[i];
-                const y = tubePositions[i + 1];
-                const z = tubePositions[i + 2];
-                
-                // Find closest point on curve to determine color
-                const mag = Math.sqrt(y * y + z * z);
-                const t_color = Math.min(mag / 10, 1);
-                
-                let color;
-                if (t_color < 0.5) {
-                    const s = t_color * 2;
-                    color = new THREE.Color(s, s, 1);
-                } else {
-                    const s = (t_color - 0.5) * 2;
-                    color = new THREE.Color(1, 1 - s, 1 - s);
-                }
-                
-                tubeColors[i] = color.r;
-                tubeColors[i + 1] = color.g;
-                tubeColors[i + 2] = color.b;
-            }
-            
-            tubeGeometry.setAttribute('color', new THREE.BufferAttribute(tubeColors, 3));
-            
-            const tubeMaterial = new THREE.MeshPhongMaterial({
-                vertexColors: true,
-                shininess: 60,
-                specular: 0x444444
-            });
-            
-            surface = new THREE.Mesh(tubeGeometry, tubeMaterial);
-            scene.add(surface);
+            colors.push(color);
         }
+        
+        // Add tube geometry for better visibility
+        const curve = new THREE.CatmullRomCurve3(points);
+        curve.curveType = 'catmullrom';
+        curve.tension = 0.5;
+        
+        const tubeGeometry = new THREE.TubeGeometry(
+            curve,
+            resolution * 2,
+            0.15,
+            16,
+            false
+        );
+        
+        // Create color attribute for tube
+        const tubeColors = new Float32Array(tubeGeometry.attributes.position.count * 3);
+        const tubePositions = tubeGeometry.attributes.position.array;
+        
+        for (let i = 0; i < tubePositions.length; i += 3) {
+            const x = tubePositions[i];
+            const y = tubePositions[i + 1];
+            const z = tubePositions[i + 2];
+            
+            // Find closest point on curve to determine color
+            const mag = Math.sqrt(y * y + z * z);
+            const t_color = Math.min(mag / 10, 1);
+            
+            let color;
+            if (t_color < 0.5) {
+                const s = t_color * 2;
+                color = new THREE.Color(s, s, 1);
+            } else {
+                const s = (t_color - 0.5) * 2;
+                color = new THREE.Color(1, 1 - s, 1 - s);
+            }
+            
+            tubeColors[i] = color.r;
+            tubeColors[i + 1] = color.g;
+            tubeColors[i + 2] = color.b;
+        }
+        
+        tubeGeometry.setAttribute('color', new THREE.BufferAttribute(tubeColors, 3));
+        
+        const tubeMaterial = new THREE.MeshPhongMaterial({
+            vertexColors: true,
+            shininess: 60,
+            specular: 0x444444
+        });
+        
+        surface = new THREE.Mesh(tubeGeometry, tubeMaterial);
+        scene.add(surface);
     }
     
     // Player controls
@@ -410,83 +465,141 @@
     }
     
     // Joystick handlers
+    let joystickBaseX = 0;
+    let joystickBaseY = 0;
+    
     function handleJoystickStart(e, side) {
         e.preventDefault();
+        e.stopPropagation();
         const touch = e.touches[0];
-        const joystick = side === 'left' ? joysticks.left : joysticks.right;
+        const joystick = joysticks.left;
         
         joystick.active = true;
         joystick.touchId = touch.identifier;
+        
+        // Store initial joystick base position
+        const element = document.getElementById(side + 'Joystick');
+        const rect = element.getBoundingClientRect();
+        joystickBaseX = rect.left + rect.width / 2;
+        joystickBaseY = rect.top + rect.height / 2;
+        
         updateJoystick(touch, side);
     }
     
-    function handleJoystickMove(e) {
-        e.preventDefault();
-        for (let touch of e.touches) {
-            if (touch.identifier === joysticks.left.touchId) {
-                updateJoystick(touch, 'left');
-            } else if (touch.identifier === cameraTouchId) {
-                // Camera control
-                const deltaX = touch.clientX - lastTouchX;
-                const deltaY = touch.clientY - lastTouchY;
+    function handleJoystickEnd(e, side) {
+        e.stopPropagation();
+        const joystick = joysticks.left;
+        
+        // Check if the released touch is the joystick touch
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === joystick.touchId) {
+                joystick.active = false;
+                joystick.x = 0;
+                joystick.y = 0;
+                joystick.touchId = null;
                 
-                yaw -= deltaX * touchLookSpeed;
-                pitch -= deltaY * touchLookSpeed;
-                // Remove pitch clamping for free rotation
+                const handle = document.querySelector(`#${side}Joystick .joystick-handle`);
+                handle.style.transform = 'translate(-50%, -50%)';
                 
-                lastTouchX = touch.clientX;
-                lastTouchY = touch.clientY;
+                // Reset joystick position to original location
+                const element = document.getElementById(side + 'Joystick');
+                element.style.left = '30px';
+                element.style.bottom = '30px';
+                element.style.transform = 'none';
             }
         }
     }
     
-    function handleJoystickEnd(e, side) {
-        const joystick = side === 'left' ? joysticks.left : joysticks.right;
-        joystick.active = false;
-        joystick.x = 0;
-        joystick.y = 0;
-        joystick.touchId = null;
-        
-        const handle = document.querySelector(`#${side}Joystick .joystick-handle`);
-        handle.style.transform = 'translate(-50%, -50%)';
-    }
-    
     function updateJoystick(touch, side) {
         const element = document.getElementById(side + 'Joystick');
-        const rect = element.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
+        const maxRadius = 60; // Maximum distance from base before joystick moves
+        const followRadius = 40; // Radius within which joystick stays centered
         
-        let deltaX = touch.clientX - centerX;
-        let deltaY = touch.clientY - centerY;
+        let deltaX = touch.clientX - joystickBaseX;
+        let deltaY = touch.clientY - joystickBaseY;
         
-        const maxDistance = 35;
         const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         
-        if (distance > maxDistance) {
-            deltaX = (deltaX / distance) * maxDistance;
-            deltaY = (deltaY / distance) * maxDistance;
+        // If finger goes beyond max radius, move the joystick base
+        if (distance > maxRadius) {
+            const angle = Math.atan2(deltaY, deltaX);
+            const moveDistance = distance - maxRadius;
+            
+            // Move joystick base
+            const newBaseX = joystickBaseX + Math.cos(angle) * moveDistance;
+            const newBaseY = joystickBaseY + Math.sin(angle) * moveDistance;
+            
+            // Update base position
+            joystickBaseX = newBaseX;
+            joystickBaseY = newBaseY;
+            
+            // Update element position
+            const rect = element.getBoundingClientRect();
+            const currentLeft = parseFloat(element.style.left) || 30;
+            const currentBottom = parseFloat(element.style.bottom) || 30;
+            
+            element.style.left = `${newBaseX - rect.width / 2}px`;
+            element.style.bottom = `${window.innerHeight - newBaseY - rect.height / 2}px`;
+            
+            // Recalculate delta from new base
+            deltaX = touch.clientX - newBaseX;
+            deltaY = touch.clientY - newBaseY;
         }
         
-        const joystick = side === 'left' ? joysticks.left : joysticks.right;
-        joystick.x = deltaX / maxDistance;
-        joystick.y = deltaY / maxDistance;
+        // Clamp handle position within followRadius
+        const handleDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        if (handleDistance > followRadius) {
+            const angle = Math.atan2(deltaY, deltaX);
+            deltaX = Math.cos(angle) * followRadius;
+            deltaY = Math.sin(angle) * followRadius;
+        }
+        
+        const joystick = joysticks.left;
+        joystick.x = deltaX / followRadius;
+        joystick.y = deltaY / followRadius;
         
         const handle = element.querySelector('.joystick-handle');
         handle.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
     }
     
-    document.getElementById('leftJoystick').addEventListener('touchstart', (e) => handleJoystickStart(e, 'left'));
+    const leftJoystickElement = document.getElementById('leftJoystick');
+    
+    // Capture all touches on joystick element and prevent them from going to document
+    leftJoystickElement.addEventListener('touchstart', (e) => {
+        e.stopImmediatePropagation();
+        handleJoystickStart(e, 'left');
+    }, { passive: false, capture: true });
+    
+    leftJoystickElement.addEventListener('touchend', (e) => {
+        e.stopImmediatePropagation();
+        handleJoystickEnd(e, 'left');
+    }, { passive: false, capture: true });
+    
+    leftJoystickElement.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        for (let touch of e.touches) {
+            if (touch.identifier === joysticks.left.touchId) {
+                updateJoystick(touch, 'left');
+            }
+        }
+    }, { passive: false, capture: true });
     
     // Touch controls for camera (anywhere outside joystick)
     document.addEventListener('touchstart', (e) => {
         if (!state.isMobile) return;
         
         for (let touch of e.touches) {
+            // Skip if this touch is already assigned to joystick
+            if (touch.identifier === joysticks.left.touchId) {
+                continue;
+            }
+            
             const element = document.elementFromPoint(touch.clientX, touch.clientY);
             
             // If touch is not on joystick or UI, use for camera
-            if (!element.closest('#leftJoystick') && !element.closest('#ui')) {
+            if (!element || (!element.closest('#leftJoystick') && !element.closest('#ui'))) {
+                e.preventDefault(); // Prevent scrolling
                 if (cameraTouchId === null) {
                     cameraTouchId = touch.identifier;
                     lastTouchX = touch.clientX;
@@ -494,10 +607,27 @@
                 }
             }
         }
-    });
-    document.addEventListener('touchmove', handleJoystickMove);
+    }, { passive: false });
     
-    document.getElementById('leftJoystick').addEventListener('touchend', (e) => handleJoystickEnd(e, 'left'));
+    document.addEventListener('touchmove', (e) => {
+        if (!state.isMobile) return;
+        
+        for (let touch of e.touches) {
+            // Only process camera touch, never joystick touch
+            if (touch.identifier === cameraTouchId && touch.identifier !== joysticks.left.touchId) {
+                e.preventDefault();
+                
+                const deltaX = touch.clientX - lastTouchX;
+                const deltaY = touch.clientY - lastTouchY;
+                
+                yaw -= deltaX * touchLookSpeed;
+                pitch -= deltaY * touchLookSpeed;
+                
+                lastTouchX = touch.clientX;
+                lastTouchY = touch.clientY;
+            }
+        }
+    }, { passive: false });
     
     document.addEventListener('touchend', (e) => {
         for (let touch of e.changedTouches) {
@@ -524,11 +654,18 @@
     // Mouse controls
     let isPointerLocked = false;
     
+    const canvas = document.getElementById('canvas');
+    
     canvas.addEventListener('click', () => {
         if (!state.isMobile) {
             canvas.requestPointerLock();
         }
     });
+    
+    // Prevent all scrolling on canvas
+    canvas.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
+    canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+    canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
     
     document.addEventListener('pointerlockchange', () => {
         isPointerLocked = document.pointerLockElement === canvas;
@@ -589,7 +726,7 @@
         // Joystick movement (mobile)
         if (state.isMobile && joysticks.left.active) {
             camera.position.addScaledVector(forwardFlat, -joysticks.left.y * moveSpeed * 1.5);
-            camera.position.addScaledVector(rightFlat, joysticks.left.x * moveSpeed * 1.5);
+            camera.position.addScaledVector(rightFlat, -joysticks.left.x * moveSpeed * 1.5);
         }
         
         // Update camera rotation
