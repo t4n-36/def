@@ -132,6 +132,22 @@
         text-align: center;
     }
     
+    #coordSystem {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        color: white;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 11px;
+        line-height: 1.6;
+    }
+    
+    #coordSystem div {
+        margin: 3px 0;
+    }
+    
     @media (max-width: 768px) {
         #ui {
             font-size: 11px;
@@ -159,10 +175,20 @@
         <button id="funcZ2" class="active">z²</button>
         <button id="funcZ3">z³</button>
         <button id="funcExp">e^z</button>
+        <button id="funcSin">sin(z)</button>
+        <button id="funcCos">cos(z)</button>
+    </div>
+    <div class="button-group">
+        <div>固定軸:</div>
+        <button id="axisImX" class="active">Im(x)固定</button>
+        <button id="axisImY">Im(y)固定</button>
     </div>
     <div class="button-group">
         <label id="sliderLabel">Im(z) 固定値: 0.00</label>
         <input type="range" id="fixedValueSlider" min="-5" max="5" step="0.1" value="0">
+    </div>
+    <div class="button-group">
+        <button id="toggleFormulas">数式表示: OFF</button>
     </div>
     <div style="margin-top: 10px; font-size: 11px; opacity: 0.8;">
         <div>PC: WASD移動, マウス視点</div>
@@ -181,15 +207,24 @@
     位置: (0.00, 0.00, 0.00) | f(z) = 0.00 + 0.00i
 </div>
 
+<div id="coordSystem">
+    <div><strong>座標系 (右手系)</strong></div>
+    <div style="color: #ff8888;">🡢 X軸: Re(z) - 実部</div>
+    <div style="color: #88ff88;">🡡 Y軸: Re(f) or Im(f)</div>
+    <div style="color: #8888ff;">🡣 Z軸: Im(z) - 虚部</div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
     // Game state
     const state = {
         mode: 'real', // 'real', 'imag', 'abs'
-        func: 'z2', // 'z2', 'z3', 'exp'
+        func: 'z2', // 'z2', 'z3', 'exp', 'sin', 'cos'
         fixedAxis: true,
+        fixedAxisType: 'y', // 'x' or 'y' - which imaginary axis to fix
         fixedValue: 0,
-        isMobile: false
+        isMobile: false,
+        showFormulas: false
     };
     
     // Scene setup
@@ -214,8 +249,8 @@
     
     // Add grid and axes
     function createAxesAndGrid() {
-        const gridSize = 40;
-        const gridDivisions = 40;
+        const gridSize = 200;
+        const gridDivisions = 400;
         
         // Grid on XZ plane (ground)
         const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x444444, 0x222222);
@@ -234,34 +269,34 @@
         
         // X axis (red) - Re(z)
         const xGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(-20, 0, 0),
-            new THREE.Vector3(20, 0, 0)
+            new THREE.Vector3(-100, 0, 0),
+            new THREE.Vector3(100, 0, 0)
         ]);
         const xAxis = new THREE.Line(xGeometry, axesMaterial.x);
         scene.add(xAxis);
         
         // Y axis (green) - Re(f) or Im(f)
         const yGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(0, -20, 0),
-            new THREE.Vector3(0, 20, 0)
+            new THREE.Vector3(0, -100, 0),
+            new THREE.Vector3(0, 100, 0)
         ]);
         const yAxis = new THREE.Line(yGeometry, axesMaterial.y);
         scene.add(yAxis);
         
         // Z axis (blue) - Im(z)
         const zGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(0, 0, -20),
-            new THREE.Vector3(0, 0, 20)
+            new THREE.Vector3(0, 0, -100),
+            new THREE.Vector3(0, 0, 100)
         ]);
         const zAxis = new THREE.Line(zGeometry, axesMaterial.z);
         scene.add(zAxis);
         
         // Add tick marks every 1 unit
-        const tickSize = 0.3;
-        const tickMaterial = new THREE.LineBasicMaterial({ color: 0xaaaaaa });
+        const tickSize = 0.2;
+        const tickMaterial = new THREE.LineBasicMaterial({ color: 0x888888 });
         
-        for (let i = -20; i <= 20; i++) {
-            if (i === 0) continue; // Skip origin
+        for (let i = -100; i <= 100; i += 1) {
+            if (Math.abs(i) < 0.01) continue; // Skip origin
             
             // X axis ticks
             const xTickGeom = new THREE.BufferGeometry().setFromPoints([
@@ -285,11 +320,32 @@
             scene.add(new THREE.Line(zTickGeom, tickMaterial));
         }
         
-        // Add small spheres at integer coordinates along axes for better visibility
-        const sphereGeometry = new THREE.SphereGeometry(0.08, 8, 8);
+        // Add spheres and text labels at every 5 units
+        const sphereGeometry = new THREE.SphereGeometry(0.15, 8, 8);
         const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
         
-        for (let i = -20; i <= 20; i += 5) {
+        // Create canvas for text labels
+        function createTextSprite(text, color = '#ffffff') {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 128;
+            canvas.height = 64;
+            
+            context.fillStyle = color;
+            context.font = 'Bold 40px Arial';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, 64, 32);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.scale.set(2, 1, 1);
+            
+            return sprite;
+        }
+        
+        for (let i = -100; i <= 100; i += 5) {
             if (i === 0) continue;
             
             // X axis markers
@@ -297,15 +353,27 @@
             xSphere.position.set(i, 0, 0);
             scene.add(xSphere);
             
+            const xLabel = createTextSprite(i.toString(), '#ff8888');
+            xLabel.position.set(i, -1.5, 0);
+            scene.add(xLabel);
+            
             // Y axis markers
             const ySphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             ySphere.position.set(0, i, 0);
             scene.add(ySphere);
             
+            const yLabel = createTextSprite(i.toString(), '#88ff88');
+            yLabel.position.set(-1.5, i, 0);
+            scene.add(yLabel);
+            
             // Z axis markers
             const zSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
             zSphere.position.set(0, 0, i);
             scene.add(zSphere);
+            
+            const zLabel = createTextSprite(i.toString(), '#8888ff');
+            zLabel.position.set(0, -1.5, i);
+            scene.add(zLabel);
         }
     }
     
@@ -335,6 +403,16 @@
                 result.re = expRe * Math.cos(z.im);
                 result.im = expRe * Math.sin(z.im);
                 break;
+            case 'sin':
+                // sin(z) = sin(x+iy) = sin(x)cosh(y) + i*cos(x)sinh(y)
+                result.re = Math.sin(z.re) * Math.cosh(z.im);
+                result.im = Math.cos(z.re) * Math.sinh(z.im);
+                break;
+            case 'cos':
+                // cos(z) = cos(x+iy) = cos(x)cosh(y) - i*sin(x)sinh(y)
+                result.re = Math.cos(z.re) * Math.cosh(z.im);
+                result.im = -Math.sin(z.re) * Math.sinh(z.im);
+                break;
         }
         
         return result;
@@ -356,6 +434,7 @@
     
     // Create surface
     let surface;
+    let formulaLabels = []; // Store formula labels for toggling
     
     function createSurface() {
         if (surface) {
@@ -364,30 +443,106 @@
             surface.material.dispose();
         }
         
+        // Remove old formula labels
+        formulaLabels.forEach(label => scene.remove(label));
+        formulaLabels = [];
+        
         // Fixed mode: Im(z) = fixedValue, draw (Re(z), Re(f), Im(f)) curve
-        const resolution = state.isMobile ? 300 : 500;
-        const range = 20;
+        const resolution = state.isMobile ? 800 : 1200;
+        const range = 40;
         
         const points = [];
         const colors = [];
         
+        // Helper function to create formula text sprite
+        function createFormulaSprite(x, y, text) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = 256;
+            canvas.height = 64;
+            
+            context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            context.fillStyle = '#ffffff';
+            context.font = 'Bold 24px Arial';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(text, 128, 32);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            sprite.scale.set(4, 1, 1);
+            sprite.visible = state.showFormulas;
+            
+            return sprite;
+        }
+        
         for (let i = 0; i <= resolution; i++) {
             const t = (i / resolution) * 2 - 1;
-            const reZ = t * range; // Re(z) from -range to +range
-            const imZ = state.fixedValue; // Im(z) fixed
+            const realPart = t * range; // Real part from -range to +range
             
-            const result = complexFunc(reZ, imZ, state.func);
+            let x, y; // x and y for the complex number z = x + iy
             
-            // Position: (Re(z), Re(f), Im(f))
-            points.push(new THREE.Vector3(
-                reZ,           // X: Re(z)
-                result.re,     // Y: Re(f)
-                result.im      // Z: Im(f)
-            ));
+            if (state.fixedAxisType === 'y') {
+                // Im(y) fixed: z = x + i*fixedValue
+                x = realPart;
+                y = state.fixedValue;
+            } else {
+                // Im(x) fixed: z = fixedValue + i*y
+                x = state.fixedValue;
+                y = realPart;
+            }
+            
+            const result = complexFunc(x, y, state.func);
+            
+            // Clamp extreme values for e^z
+            const maxVal = 100;
+            const clampedRe = Math.max(-maxVal, Math.min(maxVal, result.re));
+            const clampedIm = Math.max(-maxVal, Math.min(maxVal, result.im));
+            
+            // Position depends on which axis is fixed
+            let position;
+            if (state.fixedAxisType === 'y') {
+                // Im(y) fixed: (Re(z), Re(f), Im(f))
+                position = new THREE.Vector3(
+                    x,           // X: Re(z)
+                    clampedRe,   // Y: Re(f)
+                    clampedIm    // Z: Im(f)
+                );
+            } else {
+                // Im(x) fixed: (Im(z), Re(f), Re(z))
+                position = new THREE.Vector3(
+                    y,           // X: Im(z)
+                    clampedRe,   // Y: Re(f)
+                    clampedIm    // Z: Im(f)
+                );
+            }
+            
+            points.push(position);
+            
+            // Add formula labels every 7 units
+            if (Math.abs(realPart % 7) < 0.1 && Math.abs(realPart) > 0.1) {
+                const zStr = state.fixedAxisType === 'y' 
+                    ? `${realPart.toFixed(0)}+${state.fixedValue.toFixed(1)}i`
+                    : `${state.fixedValue.toFixed(1)}+${realPart.toFixed(0)}i`;
+                const fStr = `${clampedRe.toFixed(1)}+${clampedIm.toFixed(1)}i`;
+                
+                const label = createFormulaSprite(
+                    position.x, 
+                    position.y, 
+                    `z=${zStr}, f=${fStr}`
+                );
+                label.position.copy(position);
+                label.position.y += 2; // Offset above the curve
+                scene.add(label);
+                formulaLabels.push(label);
+            }
             
             // Color based on |f|
-            const mag = Math.sqrt(result.re * result.re + result.im * result.im);
-            const t_color = Math.min(mag / 10, 1);
+            const mag = Math.sqrt(clampedRe * clampedRe + clampedIm * clampedIm);
+            const t_color = Math.min(mag / 20, 1);
             let color;
             if (t_color < 0.5) {
                 const s = t_color * 2;
@@ -406,7 +561,7 @@
         
         const tubeGeometry = new THREE.TubeGeometry(
             curve,
-            resolution * 2,
+            resolution * 3,
             0.15,
             16,
             false
@@ -423,7 +578,7 @@
             
             // Find closest point on curve to determine color
             const mag = Math.sqrt(y * y + z * z);
-            const t_color = Math.min(mag / 10, 1);
+            const t_color = Math.min(mag / 20, 1);
             
             let color;
             if (t_color < 0.5) {
@@ -488,6 +643,12 @@
     function handleJoystickStart(e, side) {
         e.preventDefault();
         e.stopPropagation();
+        
+        // Don't allow joystick to start if camera touch is already active
+        if (cameraTouchId !== null) {
+            return;
+        }
+        
         const touch = e.touches[0];
         const joystick = joysticks.left;
         
@@ -602,9 +763,15 @@
     leftJoystickElement.addEventListener('touchmove', (e) => {
         e.preventDefault();
         e.stopImmediatePropagation();
+        
+        // Only update if joystick is active and this is specifically the joystick's touch
+        if (!joysticks.left.active) return;
+        
         for (let touch of e.touches) {
-            if (touch.identifier === joysticks.left.touchId) {
+            if (touch.identifier === joysticks.left.touchId && 
+                touchStartPositions.get(touch.identifier) === 'joystick') {
                 updateJoystick(touch, 'left');
+                break; // Only process the joystick touch
             }
         }
     }, { passive: false, capture: true });
@@ -712,12 +879,47 @@
         document.getElementById('funcZ2').classList.toggle('active', func === 'z2');
         document.getElementById('funcZ3').classList.toggle('active', func === 'z3');
         document.getElementById('funcExp').classList.toggle('active', func === 'exp');
+        document.getElementById('funcSin').classList.toggle('active', func === 'sin');
+        document.getElementById('funcCos').classList.toggle('active', func === 'cos');
         createSurface();
+    }
+    
+    function setFixedAxis(axisType) {
+        state.fixedAxisType = axisType;
+        document.getElementById('axisImX').classList.toggle('active', axisType === 'x');
+        document.getElementById('axisImY').classList.toggle('active', axisType === 'y');
+        
+        // Update slider label
+        if (axisType === 'y') {
+            document.getElementById('sliderLabel').textContent = `Im(y) 固定値: ${state.fixedValue.toFixed(2)}`;
+        } else {
+            document.getElementById('sliderLabel').textContent = `Im(x) 固定値: ${state.fixedValue.toFixed(2)}`;
+        }
+        
+        createSurface();
+    }
+    
+    function toggleFormulas() {
+        state.showFormulas = !state.showFormulas;
+        document.getElementById('toggleFormulas').textContent = `数式表示: ${state.showFormulas ? 'ON' : 'OFF'}`;
+        document.getElementById('toggleFormulas').classList.toggle('active', state.showFormulas);
+        
+        // Toggle visibility of all formula labels
+        formulaLabels.forEach(label => {
+            label.visible = state.showFormulas;
+        });
     }
     
     document.getElementById('funcZ2').addEventListener('click', () => setFunc('z2'));
     document.getElementById('funcZ3').addEventListener('click', () => setFunc('z3'));
     document.getElementById('funcExp').addEventListener('click', () => setFunc('exp'));
+    document.getElementById('funcSin').addEventListener('click', () => setFunc('sin'));
+    document.getElementById('funcCos').addEventListener('click', () => setFunc('cos'));
+    
+    document.getElementById('axisImX').addEventListener('click', () => setFixedAxis('x'));
+    document.getElementById('axisImY').addEventListener('click', () => setFixedAxis('y'));
+    
+    document.getElementById('toggleFormulas').addEventListener('click', toggleFormulas);
     
     document.getElementById('fullscreenBtn').addEventListener('click', () => {
         if (document.documentElement.requestFullscreen) {
@@ -729,7 +931,8 @@
     
     document.getElementById('fixedValueSlider').addEventListener('input', (e) => {
         state.fixedValue = parseFloat(e.target.value);
-        document.getElementById('sliderLabel').textContent = `Im(z) 固定値: ${state.fixedValue.toFixed(2)}`;
+        const axisLabel = state.fixedAxisType === 'y' ? 'Im(y)' : 'Im(x)';
+        document.getElementById('sliderLabel').textContent = `${axisLabel} 固定値: ${state.fixedValue.toFixed(2)}`;
         createSurface();
     });
     
