@@ -113,6 +113,30 @@
         background: rgba(255, 100, 100, 0.9);
     }
     
+    .func-btn {
+        background: rgba(240, 240, 250, 0.95);
+        border: 1px solid rgba(200, 200, 220, 0.5);
+        color: #333;
+        padding: 10px 4px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        transition: background 0.15s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        pointer-events: auto;
+        touch-action: manipulation;
+    }
+    
+    .func-btn:hover {
+        background: rgba(220, 220, 240, 1);
+    }
+    
+    .func-btn:active {
+        background: rgba(200, 200, 230, 1);
+        transform: scale(0.97);
+    }
+    
     input[type="range"] {
         width: 100%;
         margin: 5px 0;
@@ -213,9 +237,12 @@
         <button id="funcCos">cos(z)</button>
     </div>
     <div class="button-group">
+        <button id="openCustomKeyboard" style="width: 100%; background: rgba(150,100,255,0.6);">カスタム関数を構築</button>
+    </div>
+    <div class="button-group">
         <div>固定軸:</div>
-        <button id="axisImX">Re固定</button>
-        <button id="axisImY" class="active">Im固定</button>
+        <button id="axisImX">Re(入力)固定</button>
+        <button id="axisImY" class="active">Im(入力)固定</button>
     </div>
     <div class="button-group">
         <label id="sliderLabel">Im 固定値: 0.00</label>
@@ -250,12 +277,86 @@
 
 <div id="coordSystem"></div>
 
+<!-- Custom Function Keyboard Modal -->
+<div id="customKeyboardModal" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.98); padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px rgba(0,0,0,0.3); z-index: 10000; transform: translateY(100%); transition: transform 0.3s ease; pointer-events: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div style="font-size: 14px; font-weight: bold; color: #333;">カスタム関数</div>
+        <button id="closeKeyboard" style="background: rgba(200,50,50,0.8); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; pointer-events: auto;">閉じる</button>
+    </div>
+    <div id="customFuncDisplay" style="width: 100%; padding: 12px; background: #f5f5f5; border: 2px solid #ddd; border-radius: 8px; color: #333; font-size: 18px; min-height: 50px; margin-bottom: 10px; font-family: monospace; overflow-x: auto;">
+        
+    </div>
+    <!-- Row 1: x, y, π, e, numbers -->
+    <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin-bottom: 3px;">
+        <button class="func-btn" data-func="x">x</button>
+        <button class="func-btn" data-func="y">y</button>
+        <button class="func-btn" data-func="π">π</button>
+        <button class="func-btn" data-func="e">e</button>
+        <button class="func-btn" data-func="7">7</button>
+        <button class="func-btn" data-func="8">8</button>
+        <button class="func-btn" data-func="9">9</button>
+        <button class="func-btn" data-func="*">×</button>
+    </div>
+    <!-- Row 2: powers and numbers -->
+    <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin-bottom: 3px;">
+        <button class="func-btn" data-func="^2">x²</button>
+        <button class="func-btn" data-func="^">xʸ</button>
+        <button class="func-btn" data-func="sqrt(">√</button>
+        <button class="func-btn" data-func="abs">|x|</button>
+        <button class="func-btn" data-func="4">4</button>
+        <button class="func-btn" data-func="5">5</button>
+        <button class="func-btn" data-func="6">6</button>
+        <button class="func-btn" data-func="+">+</button>
+    </div>
+    <!-- Row 3: comparison and numbers -->
+    <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin-bottom: 3px;">
+        <button class="func-btn" data-func="<">&lt;</button>
+        <button class="func-btn" data-func=">">&gt;</button>
+        <button class="func-btn" data-func="!">!</button>
+        <button class="func-btn" data-func="/">/</button>
+        <button class="func-btn" data-func="1">1</button>
+        <button class="func-btn" data-func="2">2</button>
+        <button class="func-btn" data-func="3">3</button>
+        <button class="func-btn" data-func="-">−</button>
+    </div>
+    <!-- Row 4: special functions and numbers -->
+    <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin-bottom: 3px;">
+        <button class="func-btn" data-func="e^">eˣ</button>
+        <button class="func-btn" data-func="10^">10ˣ</button>
+        <button class="func-btn" data-func="sqrt">√x</button>
+        <button class="func-btn" data-func="!">x!</button>
+        <button class="func-btn" data-func="0">0</button>
+        <button class="func-btn" data-func="(">(</button>
+        <button class="func-btn" data-func=")">)</button>
+        <button class="func-btn" data-func="clear" style="background: rgba(150,150,150,0.7);">⌫</button>
+    </div>
+    <!-- Row 5: trig functions -->
+    <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin-bottom: 3px;">
+        <button class="func-btn" data-func="sin(">sin</button>
+        <button class="func-btn" data-func="cos(">cos</button>
+        <button class="func-btn" data-func="tan(">tan</button>
+        <button class="func-btn" data-func="%">%</button>
+        <button class="func-btn" data-func=".">.</button>
+        <button class="func-btn" data-func=",">,</button>
+        <button class="func-btn" data-func="^">^</button>
+        <button id="applyCustom" style="background: rgba(100,200,100,0.9); padding: 12px; font-size: 14px; border: 1px solid rgba(80,180,80,0.5); border-radius: 6px; color: white; cursor: pointer; font-weight: bold;">適用</button>
+    </div>
+    <!-- Row 6: inverse trig -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px;">
+        <button class="func-btn" data-func="ln(">ln</button>
+        <button class="func-btn" data-func="log(">log</button>
+        <button class="func-btn" data-func="exp(">exp</button>
+        <button class="func-btn" data-func="clearAll" style="background: rgba(200,50,50,0.7); color: white;">クリア</button>
+    </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
     // Game state
     const state = {
         mode: 'real', // 'real', 'imag', 'abs'
-        func: 'z2', // 'z2', 'z3', 'exp', 'sin', 'cos'
+        func: 'z2', // 'z2', 'z3', 'exp', 'sin', 'cos', 'custom'
+        customFuncStr: '', // User's custom function string
         fixedAxis: true,
         fixedAxisType: 'y', // 'x' or 'y' - which axis to fix (x=Re, y=Im)
         fixedValue: 0,
@@ -498,8 +599,8 @@
         
         coordCtx.fillStyle = '#4444ff';
         coordCtx.font = 'bold 9px Arial';
-        const zLabel = state.fixedAxisType === 'y' ? 'Z(Im)' : 'Z(Re)';
-        coordCtx.fillText(zLabel, centerX - 23, centerY + 32);
+        const zLabel = state.fixedAxisType === 'y' ? 'Z:Im(y)' : 'Z:Im(x)';
+        coordCtx.fillText(zLabel, centerX - 28, centerY + 32);
     }
     
     drawCoordSystem();
@@ -538,9 +639,135 @@
                 result.re = Math.cos(z.re) * Math.cosh(z.im);
                 result.im = -Math.sin(z.re) * Math.sinh(z.im);
                 break;
+            case 'custom':
+                // Evaluate custom function
+                try {
+                    result = evaluateCustomFunction(state.customFuncStr, z.re, z.im);
+                } catch (e) {
+                    console.error('Custom function error:', e);
+                    result = { re: 0, im: 0 };
+                }
+                break;
         }
         
         return result;
+    }
+    
+    // Evaluate custom function string
+    function evaluateCustomFunction(funcStr, re, im) {
+        const z = { re, im };
+        
+        // Complex operations
+        const add = (a, b) => ({ re: a.re + b.re, im: a.im + b.im });
+        const sub = (a, b) => ({ re: a.re - b.re, im: a.im - b.im });
+        const mul = (a, b) => ({ re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re });
+        const div = (a, b) => {
+            const d = b.re * b.re + b.im * b.im;
+            return d === 0 ? {re:0,im:0} : { re: (a.re*b.re + a.im*b.im)/d, im: (a.im*b.re - a.re*b.im)/d };
+        };
+        const pow = (z, n) => {
+            const r = Math.sqrt(z.re**2 + z.im**2);
+            if (r === 0) return {re:0,im:0};
+            const theta = Math.atan2(z.im, z.re);
+            const newR = Math.exp(n * Math.log(r));
+            const newTheta = n * theta;
+            return { re: newR * Math.cos(newTheta), im: newR * Math.sin(newTheta) };
+        };
+        const cExp = (z) => { const e = Math.exp(z.re); return {re: e*Math.cos(z.im), im: e*Math.sin(z.im)}; };
+        const cSin = (z) => ({re: Math.sin(z.re)*Math.cosh(z.im), im: Math.cos(z.re)*Math.sinh(z.im)});
+        const cCos = (z) => ({re: Math.cos(z.re)*Math.cosh(z.im), im: -Math.sin(z.re)*Math.sinh(z.im)});
+        const cTan = (z) => div(cSin(z), cCos(z));
+        const cLn = (z) => {
+            const r = Math.sqrt(z.re**2 + z.im**2);
+            return r === 0 ? {re:-Infinity,im:0} : {re: Math.log(r), im: Math.atan2(z.im,z.re)};
+        };
+        
+        try {
+            let str = funcStr.trim().replace(/\s+/g, '');
+            
+            // Normalize symbols BEFORE variable replacement
+            str = str.replace(/√\(/g, 'sqrt(');
+            str = str.replace(/√/g, 'sqrt(') + (str.includes('√') && !str.includes('(') ? ')' : '');
+            str = str.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+            str = str.replace(/²/g, '^2').replace(/³/g, '^3').replace(/⁴/g, '^4');
+            
+            // NOW replace variables
+            str = str.replace(/[xyz]/gi, 'V');
+            
+            // Recursive evaluator with proper operator precedence
+            let tempStore = {};
+            let tempCounter = 0;
+            
+            function eval_(expr) {
+                expr = expr.trim();
+                if (!expr) return {re:0,im:0};
+                
+                // Check temp store
+                if (tempStore[expr]) return tempStore[expr];
+                
+                // Handle parentheses and functions
+                while (true) {
+                    let match = expr.match(/([a-z]+)?\(([^()]+)\)/i);
+                    if (!match) break;
+                    
+                    const func = (match[1] || '').toLowerCase();
+                    const inner = match[2];
+                    const innerVal = eval_(inner);
+                    
+                    let result;
+                    if (func === 'sin') result = cSin(innerVal);
+                    else if (func === 'cos') result = cCos(innerVal);
+                    else if (func === 'tan') result = cTan(innerVal);
+                    else if (func === 'exp') result = cExp(innerVal);
+                    else if (func === 'ln') result = cLn(innerVal);
+                    else if (func === 'log') result = div(cLn(innerVal), {re:Math.log(10),im:0});
+                    else if (func === 'sqrt') result = pow(innerVal, 0.5);
+                    else result = innerVal;
+                    
+                    const temp = `T${tempCounter++}`;
+                    tempStore[temp] = result;
+                    expr = expr.replace(match[0], temp);
+                }
+                
+                // Addition/Subtraction (lowest precedence)
+                for (let i = expr.length - 1; i > 0; i--) {
+                    if (expr[i] === '+') {
+                        return add(eval_(expr.slice(0,i)), eval_(expr.slice(i+1)));
+                    }
+                    if (expr[i] === '-' && /[0-9VT)]/.test(expr[i-1])) {
+                        return sub(eval_(expr.slice(0,i)), eval_(expr.slice(i+1)));
+                    }
+                }
+                
+                // Multiplication/Division
+                for (let i = expr.length - 1; i > 0; i--) {
+                    if (expr[i] === '*') return mul(eval_(expr.slice(0,i)), eval_(expr.slice(i+1)));
+                    if (expr[i] === '/') return div(eval_(expr.slice(0,i)), eval_(expr.slice(i+1)));
+                }
+                
+                // Exponentiation (highest precedence)
+                const powIdx = expr.indexOf('^');
+                if (powIdx > 0) {
+                    const base = eval_(expr.slice(0, powIdx));
+                    const exp = parseFloat(expr.slice(powIdx+1));
+                    return isNaN(exp) ? {re:0,im:0} : pow(base, exp);
+                }
+                
+                // Constants and variables
+                if (expr === 'V') return z;
+                if (expr === 'e') return {re: Math.E, im:0};
+                if (expr === 'π' || expr.toLowerCase() === 'pi') return {re: Math.PI, im:0};
+                
+                const num = parseFloat(expr);
+                return isNaN(num) ? {re:0,im:0} : {re:num, im:0};
+            }
+            
+            return eval_(str);
+            
+        } catch (e) {
+            console.error('Parse error:', e, 'Input:', funcStr);
+            return {re:0,im:0};
+        }
     }
     
     function getHeight(x, z) {
@@ -572,6 +799,12 @@
         formulaLabels.forEach(label => scene.remove(label));
         formulaLabels = [];
         
+        // Check if custom function is valid
+        if (state.func === 'custom' && !state.customFuncStr) {
+            console.warn('No custom function defined');
+            return; // Don't draw anything
+        }
+        
         // Fixed mode: Im(z) = fixedValue, draw (Re(z), Re(f), Im(f)) curve
         const resolution = state.isMobile ? 800 : 1200;
         const range = 40;
@@ -579,6 +812,7 @@
         const points = [];
         const colors = [];
         const labeledPositions = new Set(); // Track labeled positions
+        let allZero = true; // Check if function returns all zeros
         
         // Helper function to create formula text sprite
         function createFormulaSprite(x, y, text) {
@@ -705,6 +939,11 @@
             
             const result = complexFunc(x, y, state.func);
             
+            // Check if result is non-zero
+            if (Math.abs(result.re) > 0.001 || Math.abs(result.im) > 0.001) {
+                allZero = false;
+            }
+            
             // Clamp extreme values for e^z
             const maxVal = 100;
             const clampedRe = Math.max(-maxVal, Math.min(maxVal, result.re));
@@ -802,6 +1041,12 @@
                 color = new THREE.Color(1, 1 - s, 1 - s);
             }
             colors.push(color);
+        }
+        
+        // If function returns all zeros, don't draw anything
+        if (allZero) {
+            console.warn('Function returns all zeros - not drawing');
+            return;
         }
         
         // Add tube geometry for better visibility
@@ -1038,6 +1283,11 @@
             
             const element = document.elementFromPoint(touch.clientX, touch.clientY);
             
+            // If touch is on keyboard modal, don't use for camera
+            if (element && element.closest('#customKeyboardModal')) {
+                continue;
+            }
+            
             // If touch is not on joystick, UI, or toggle button - use for camera
             if (!element || (!element.closest('#leftJoystick') && !element.closest('#ui') && element.id !== 'uiToggle')) {
                 e.preventDefault(); // Prevent scrolling
@@ -1151,7 +1401,8 @@
             'z3': '(a+bi)³',
             'exp': 'e^(a+bi)',
             'sin': 'sin(a+bi)',
-            'cos': 'cos(a+bi)'
+            'cos': 'cos(a+bi)',
+            'custom': state.customFuncStr || 'f(a+bi)'
         };
         
         const funcName = funcNames[state.func] || 'f(a+bi)';
@@ -1159,13 +1410,13 @@
         
         let fixedDesc;
         if (state.fixedAxisType === 'y') {
-            // Im fixed: b is fixed
-            fixedDesc = `虚軸b=${fixedVal}固定`;
-            document.getElementById('sliderLabel').textContent = `Im 固定値: ${fixedVal}`;
+            // Fixing imaginary part of input: b is fixed
+            fixedDesc = `b=${fixedVal}固定 (Im(入力))`;
+            document.getElementById('sliderLabel').textContent = `Im(入力) 固定値: ${fixedVal}`;
         } else {
-            // Re fixed: a is fixed
-            fixedDesc = `実軸a=${fixedVal}固定`;
-            document.getElementById('sliderLabel').textContent = `Re 固定値: ${fixedVal}`;
+            // Fixing real part of input: a is fixed
+            fixedDesc = `a=${fixedVal}固定 (Re(入力))`;
+            document.getElementById('sliderLabel').textContent = `Re(入力) 固定値: ${fixedVal}`;
         }
         
         // Update current function description
@@ -1258,6 +1509,71 @@
     document.getElementById('funcExp').addEventListener('click', () => setFunc('exp'));
     document.getElementById('funcSin').addEventListener('click', () => setFunc('sin'));
     document.getElementById('funcCos').addEventListener('click', () => setFunc('cos'));
+    
+    // Open custom keyboard modal
+    document.getElementById('openCustomKeyboard').addEventListener('click', () => {
+        const modal = document.getElementById('customKeyboardModal');
+        modal.style.display = 'block';
+        setTimeout(() => {
+            modal.style.transform = 'translateY(0)';
+        }, 10);
+    });
+    
+    // Close custom keyboard modal
+    document.getElementById('closeKeyboard').addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const modal = document.getElementById('customKeyboardModal');
+        modal.style.transform = 'translateY(100%)';
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    });
+    
+    // Apply custom function
+    document.getElementById('applyCustom').addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const customInput = document.getElementById('customFuncDisplay').textContent.trim();
+        if (customInput) {
+            state.customFuncStr = customInput;
+            state.func = 'custom';
+            // Deactivate all preset function buttons
+            document.getElementById('funcZ2').classList.remove('active');
+            document.getElementById('funcZ3').classList.remove('active');
+            document.getElementById('funcExp').classList.remove('active');
+            document.getElementById('funcSin').classList.remove('active');
+            document.getElementById('funcCos').classList.remove('active');
+            updateFunctionDescription();
+            createSurface();
+            
+            // Close the keyboard
+            const modal = document.getElementById('customKeyboardModal');
+            modal.style.transform = 'translateY(100%)';
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+    });
+    
+    // Function keyboard buttons
+    document.querySelectorAll('.func-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const display = document.getElementById('customFuncDisplay');
+            const func = btn.getAttribute('data-func');
+            
+            if (func === 'clear') {
+                // Delete last character
+                display.textContent = display.textContent.slice(0, -1);
+            } else if (func === 'clearAll') {
+                display.textContent = '';
+            } else {
+                display.textContent += func;
+            }
+        });
+    });
     
     document.getElementById('axisImX').addEventListener('click', () => setFixedAxis('x'));
     document.getElementById('axisImY').addEventListener('click', () => setFixedAxis('y'));
