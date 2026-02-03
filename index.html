@@ -39,10 +39,14 @@
         width: 100vw;
         height: 100vh;
         height: 100dvh;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 0;
     }
     
     #ui {
-        position: absolute;
+        position: fixed;
         top: 10px;
         left: 10px;
         color: white;
@@ -52,6 +56,37 @@
         font-size: 14px;
         z-index: 100;
         max-width: 300px;
+        transition: transform 0.3s ease;
+        pointer-events: auto;
+    }
+    
+    #ui.collapsed {
+        transform: translateX(-330px);
+    }
+    
+    #uiToggle {
+        position: fixed;
+        top: 20px;
+        left: calc(10px + 300px + 15px + 10px);
+        color: white;
+        background: rgba(100, 100, 255, 0.9);
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        padding: 12px 18px;
+        border-radius: 8px;
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 9999;
+        transition: left 0.3s ease;
+        pointer-events: auto;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: rgba(255,255,255,0.3);
+    }
+    
+    #uiToggle.collapsed {
+        left: 10px;
+        background: rgba(100, 255, 100, 0.9);
     }
     
     .button-group {
@@ -85,7 +120,7 @@
     
     /* Virtual Joysticks */
     .joystick {
-        position: absolute;
+        position: fixed;
         width: 120px;
         height: 120px;
         background: rgba(255, 255, 255, 0.1);
@@ -120,7 +155,7 @@
     }
     
     #info {
-        position: absolute;
+        position: fixed;
         bottom: 10px;
         left: 50%;
         transform: translateX(-50%);
@@ -130,22 +165,18 @@
         border-radius: 8px;
         font-size: 12px;
         text-align: center;
+        z-index: 100;
+        pointer-events: none;
     }
     
     #coordSystem {
-        position: absolute;
+        position: fixed;
         top: 10px;
         right: 10px;
-        color: white;
-        background: rgba(0, 0, 0, 0.7);
-        padding: 15px;
-        border-radius: 8px;
-        font-size: 11px;
-        line-height: 1.6;
-    }
-    
-    #coordSystem div {
-        margin: 3px 0;
+        width: 100px;
+        height: 100px;
+        pointer-events: none;
+        z-index: 100;
     }
     
     @media (max-width: 768px) {
@@ -170,6 +201,9 @@
 ```
 <div id="ui">
     <div><strong>複素関数エクスプローラー</strong></div>
+    <div id="currentFunc" style="font-size: 12px; color: #88ff88; margin: 5px 0; padding: 5px; background: rgba(0,100,0,0.3); border-radius: 4px;">
+        (a+bi)² = α+βi [b=0.00固定]
+    </div>
     <div class="button-group">
         <div>関数:</div>
         <button id="funcZ2" class="active">z²</button>
@@ -180,24 +214,31 @@
     </div>
     <div class="button-group">
         <div>固定軸:</div>
-        <button id="axisImX" class="active">Im(x)固定</button>
-        <button id="axisImY">Im(y)固定</button>
+        <button id="axisImX">Re固定</button>
+        <button id="axisImY" class="active">Im固定</button>
     </div>
     <div class="button-group">
-        <label id="sliderLabel">Im(z) 固定値: 0.00</label>
-        <input type="range" id="fixedValueSlider" min="-5" max="5" step="0.1" value="0">
+        <label id="sliderLabel">Im 固定値: 0.00</label>
+        <div style="display: flex; align-items: center; gap: 5px;">
+            <button id="decreaseFixed" style="padding: 5px 10px;">◀</button>
+            <input type="range" id="fixedValueSlider" min="-5" max="5" step="0.1" value="0" style="flex: 1;">
+            <button id="increaseFixed" style="padding: 5px 10px;">▶</button>
+        </div>
     </div>
     <div class="button-group">
         <button id="toggleFormulas">数式表示: OFF</button>
+        <button id="keepGraph" style="background: rgba(100, 200, 100, 0.5);">グラフ保持</button>
     </div>
     <div style="margin-top: 10px; font-size: 11px; opacity: 0.8;">
         <div>PC: WASD移動, マウス視点</div>
         <div>Space上昇, Ctrl下降, Shift走る</div>
     </div>
-    <div class="button-group">
-        <button id="fullscreenBtn" style="width: 100%; background: rgba(50, 200, 50, 0.8); margin-top: 8px;">📱 全画面表示</button>
+    <div id="keptGraphs" style="margin-top: 10px; max-height: 150px; overflow-y: auto;">
+        <!-- Kept graphs will appear here -->
     </div>
 </div>
+
+<button id="uiToggle">◀</button>
 
 <div id="leftJoystick" class="joystick">
     <div class="joystick-handle"></div>
@@ -207,12 +248,7 @@
     位置: (0.00, 0.00, 0.00) | f(z) = 0.00 + 0.00i
 </div>
 
-<div id="coordSystem">
-    <div><strong>座標系 (右手系)</strong></div>
-    <div style="color: #ff8888;">🡢 X軸: Re(z) - 実部</div>
-    <div style="color: #88ff88;">🡡 Y軸: Re(f) or Im(f)</div>
-    <div style="color: #8888ff;">🡣 Z軸: Im(z) - 虚部</div>
-</div>
+<div id="coordSystem"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -221,11 +257,13 @@
         mode: 'real', // 'real', 'imag', 'abs'
         func: 'z2', // 'z2', 'z3', 'exp', 'sin', 'cos'
         fixedAxis: true,
-        fixedAxisType: 'y', // 'x' or 'y' - which imaginary axis to fix
+        fixedAxisType: 'y', // 'x' or 'y' - which axis to fix (x=Re, y=Im)
         fixedValue: 0,
         isMobile: false,
         showFormulas: false
     };
+    
+    const keptGraphs = []; // Array to store kept graph meshes
     
     // Scene setup
     const scene = new THREE.Scene();
@@ -250,7 +288,7 @@
     // Add grid and axes
     function createAxesAndGrid() {
         const gridSize = 200;
-        const gridDivisions = 400;
+        const gridDivisions = 200; // 1 unit per division now
         
         // Grid on XZ plane (ground)
         const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x444444, 0x222222);
@@ -379,6 +417,93 @@
     
     createAxesAndGrid();
     
+    // Create coordinate system display as static 2D image
+    const coordCanvas = document.createElement('canvas');
+    coordCanvas.width = 100;
+    coordCanvas.height = 100;
+    coordCanvas.style.borderRadius = '8px';
+    document.getElementById('coordSystem').appendChild(coordCanvas);
+    
+    const coordCtx = coordCanvas.getContext('2d');
+    
+    function drawCoordSystem() {
+        coordCtx.clearRect(0, 0, 100, 100);
+        
+        const centerX = 30;
+        const centerY = 60;
+        const axisLen = 35;
+        
+        coordCtx.lineWidth = 2;
+        coordCtx.lineCap = 'round';
+        
+        // Z axis (blue) - diagonal down-left
+        coordCtx.strokeStyle = '#4444ff';
+        coordCtx.beginPath();
+        coordCtx.moveTo(centerX, centerY);
+        coordCtx.lineTo(centerX - 20, centerY + 20);
+        coordCtx.stroke();
+        
+        // Arrow for Z
+        coordCtx.beginPath();
+        coordCtx.moveTo(centerX - 20, centerY + 20);
+        coordCtx.lineTo(centerX - 17, centerY + 17);
+        coordCtx.stroke();
+        coordCtx.beginPath();
+        coordCtx.moveTo(centerX - 20, centerY + 20);
+        coordCtx.lineTo(centerX - 17, centerY + 21);
+        coordCtx.stroke();
+        
+        // X axis (red) - horizontal right
+        coordCtx.strokeStyle = '#ff4444';
+        coordCtx.beginPath();
+        coordCtx.moveTo(centerX, centerY);
+        coordCtx.lineTo(centerX + axisLen, centerY);
+        coordCtx.stroke();
+        
+        // Arrow for X
+        coordCtx.beginPath();
+        coordCtx.moveTo(centerX + axisLen, centerY);
+        coordCtx.lineTo(centerX + axisLen - 6, centerY - 3);
+        coordCtx.stroke();
+        coordCtx.beginPath();
+        coordCtx.moveTo(centerX + axisLen, centerY);
+        coordCtx.lineTo(centerX + axisLen - 6, centerY + 3);
+        coordCtx.stroke();
+        
+        // Y axis (green) - vertical up
+        coordCtx.strokeStyle = '#44ff44';
+        coordCtx.beginPath();
+        coordCtx.moveTo(centerX, centerY);
+        coordCtx.lineTo(centerX, centerY - axisLen);
+        coordCtx.stroke();
+        
+        // Arrow for Y
+        coordCtx.beginPath();
+        coordCtx.moveTo(centerX, centerY - axisLen);
+        coordCtx.lineTo(centerX - 3, centerY - axisLen + 6);
+        coordCtx.stroke();
+        coordCtx.beginPath();
+        coordCtx.moveTo(centerX, centerY - axisLen);
+        coordCtx.lineTo(centerX + 3, centerY - axisLen + 6);
+        coordCtx.stroke();
+        
+        // Labels
+        coordCtx.font = 'bold 11px Arial';
+        
+        coordCtx.fillStyle = '#ff4444';
+        coordCtx.fillText('X', centerX + axisLen + 3, centerY + 4);
+        
+        coordCtx.fillStyle = '#44ff44';
+        coordCtx.fillText('Y', centerX + 3, centerY - axisLen - 3);
+        
+        coordCtx.fillStyle = '#4444ff';
+        coordCtx.font = 'bold 9px Arial';
+        const zLabel = state.fixedAxisType === 'y' ? 'Z(Im)' : 'Z(Re)';
+        coordCtx.fillText(zLabel, centerX - 23, centerY + 32);
+    }
+    
+    drawCoordSystem();
+    
     // Complex function computation
     function complexFunc(x, y, funcType) {
         const z = { re: x, im: y };
@@ -453,30 +578,113 @@
         
         const points = [];
         const colors = [];
+        const labeledPositions = new Set(); // Track labeled positions
         
         // Helper function to create formula text sprite
         function createFormulaSprite(x, y, text) {
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
-            canvas.width = 256;
-            canvas.height = 64;
+            canvas.width = 512;
+            canvas.height = 96;
             
-            context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            context.fillStyle = 'rgba(0, 0, 0, 0.8)';
             context.fillRect(0, 0, canvas.width, canvas.height);
             
             context.fillStyle = '#ffffff';
-            context.font = 'Bold 24px Arial';
+            context.font = 'Bold 28px Arial';
             context.textAlign = 'center';
             context.textBaseline = 'middle';
-            context.fillText(text, 128, 32);
+            context.fillText(text, 256, 48);
             
             const texture = new THREE.CanvasTexture(canvas);
             const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
             const sprite = new THREE.Sprite(spriteMaterial);
-            sprite.scale.set(4, 1, 1);
+            sprite.scale.set(6, 1.2, 1);
             sprite.visible = state.showFormulas;
             
             return sprite;
+        }
+        
+        // Helper to format complex number nicely
+        function formatComplex(re, im, usePi = false) {
+            const epsilon = 0.01;
+            
+            // Handle π notation for sin/cos
+            if (usePi) {
+                const rePi = re / Math.PI;
+                const imPi = im / Math.PI;
+                
+                // Check if pure real
+                if (Math.abs(im) < epsilon) {
+                    if (Math.abs(re) < epsilon) return '0';
+                    if (Math.abs(rePi - Math.round(rePi)) < 0.1) {
+                        const val = Math.round(rePi);
+                        if (val === 1) return 'π';
+                        if (val === -1) return '-π';
+                        if (val === 0) return '0';
+                        return val + 'π';
+                    }
+                    return re.toFixed(1);
+                }
+                
+                // Check if pure imaginary
+                if (Math.abs(re) < epsilon) {
+                    if (Math.abs(imPi - Math.round(imPi)) < 0.1) {
+                        const val = Math.round(imPi);
+                        if (val === 1) return 'πi';
+                        if (val === -1) return '-πi';
+                        return val + 'πi';
+                    }
+                    return im.toFixed(1) + 'i';
+                }
+                
+                // Complex number
+                let result = Math.abs(re) < epsilon ? '' : re.toFixed(1);
+                if (im > epsilon) {
+                    result += (result ? '+' : '') + (Math.abs(im - 1) < epsilon ? '' : im.toFixed(1)) + 'i';
+                } else if (im < -epsilon) {
+                    result += (Math.abs(im + 1) < epsilon ? '-' : im.toFixed(1)) + 'i';
+                }
+                return result || '0';
+            }
+            
+            // Regular notation (no π)
+            if (Math.abs(im) < epsilon) {
+                return Math.abs(re) < epsilon ? '0' : re.toFixed(0);
+            }
+            if (Math.abs(re) < epsilon) {
+                const imVal = Math.round(im);
+                if (imVal === 1) return 'i';
+                if (imVal === -1) return '-i';
+                return imVal + 'i';
+            }
+            
+            const reStr = Math.round(re).toString();
+            const imVal = Math.round(im);
+            let imStr;
+            if (imVal === 1) {
+                imStr = '+i';
+            } else if (imVal === -1) {
+                imStr = '-i';
+            } else if (imVal > 0) {
+                imStr = '+' + imVal + 'i';
+            } else {
+                imStr = imVal + 'i';
+            }
+            
+            return reStr + imStr;
+        }
+        
+        // Get function name for display
+        function getFuncName() {
+            const names = {
+                'z2': 'z²',
+                'z3': 'z³',
+                'exp': 'e^z',
+                'sin': 'sin(z)',
+                'cos': 'cos(z)'
+            };
+            return names[state.func] || 'f(z)';
         }
         
         for (let i = 0; i <= resolution; i++) {
@@ -522,20 +730,62 @@
             
             points.push(position);
             
-            // Add formula labels every 7 units
-            if (Math.abs(realPart % 7) < 0.1 && Math.abs(realPart) > 0.1) {
-                const zStr = state.fixedAxisType === 'y' 
-                    ? `${realPart.toFixed(0)}+${state.fixedValue.toFixed(1)}i`
-                    : `${state.fixedValue.toFixed(1)}+${realPart.toFixed(0)}i`;
-                const fStr = `${clampedRe.toFixed(1)}+${clampedIm.toFixed(1)}i`;
+            // Add formula labels only when all coordinates are round numbers
+            const epsilon = 0.15;
+            const xRound = Math.abs(x - Math.round(x)) < epsilon;
+            const yRound = Math.abs(y - Math.round(y)) < epsilon;
+            const reRound = Math.abs(clampedRe - Math.round(clampedRe)) < 0.3; // Slightly more tolerant for output
+            const imRound = Math.abs(clampedIm - Math.round(clampedIm)) < 0.3;
+            
+            // Create unique key for this position to avoid duplicates
+            const posKey = `${Math.round(x)}_${Math.round(y)}`;
+            
+            // Show label if input is round AND output is reasonably round AND not already labeled
+            if (xRound && yRound && (reRound || imRound) && !labeledPositions.has(posKey)) {
+                labeledPositions.add(posKey);
+                
+                const usePi = state.func === 'sin' || state.func === 'cos';
+                
+                // For sin/cos, convert input to π notation
+                let zStr;
+                if (usePi) {
+                    // Divide by π to get the coefficient
+                    const xPi = x / Math.PI;
+                    const yPi = y / Math.PI;
+                    const innerStr = formatComplex(xPi, yPi, false);
+                    zStr = 'π(' + innerStr + ')';
+                } else {
+                    zStr = formatComplex(x, y, false);
+                }
+                
+                const fStr = formatComplex(clampedRe, clampedIm, false);
+                const funcName = getFuncName();
+                
+                // Add parentheses for exponents
+                let displayFunc = funcName;
+                if (state.func === 'z2') {
+                    displayFunc = `(${zStr})²`;
+                } else if (state.func === 'z3') {
+                    displayFunc = `(${zStr})³`;
+                } else if (state.func === 'exp') {
+                    displayFunc = `e^(${zStr})`;
+                } else {
+                    displayFunc = funcName.replace('z', zStr);
+                }
+                
+                // Use ≒ if value is approximate, = if exact
+                const isApprox = !reRound || !imRound;
+                const equalSign = isApprox ? '≒' : '=';
+                
+                const labelText = `${displayFunc} ${equalSign} ${fStr}`;
                 
                 const label = createFormulaSprite(
                     position.x, 
                     position.y, 
-                    `z=${zStr}, f=${fStr}`
+                    labelText
                 );
                 label.position.copy(position);
-                label.position.y += 2; // Offset above the curve
+                label.position.y += 3; // Offset above the curve
                 scene.add(label);
                 formulaLabels.push(label);
             }
@@ -788,8 +1038,8 @@
             
             const element = document.elementFromPoint(touch.clientX, touch.clientY);
             
-            // If touch is not on joystick or UI, use for camera
-            if (!element || (!element.closest('#leftJoystick') && !element.closest('#ui'))) {
+            // If touch is not on joystick, UI, or toggle button - use for camera
+            if (!element || (!element.closest('#leftJoystick') && !element.closest('#ui') && element.id !== 'uiToggle')) {
                 e.preventDefault(); // Prevent scrolling
                 if (cameraTouchId === null) {
                     cameraTouchId = touch.identifier;
@@ -858,8 +1108,6 @@
     
     // Prevent all scrolling on canvas
     canvas.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
-    canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
-    canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
     
     document.addEventListener('pointerlockchange', () => {
         isPointerLocked = document.pointerLockElement === canvas;
@@ -881,6 +1129,7 @@
         document.getElementById('funcExp').classList.toggle('active', func === 'exp');
         document.getElementById('funcSin').classList.toggle('active', func === 'sin');
         document.getElementById('funcCos').classList.toggle('active', func === 'cos');
+        updateFunctionDescription();
         createSurface();
     }
     
@@ -889,14 +1138,39 @@
         document.getElementById('axisImX').classList.toggle('active', axisType === 'x');
         document.getElementById('axisImY').classList.toggle('active', axisType === 'y');
         
-        // Update slider label
-        if (axisType === 'y') {
-            document.getElementById('sliderLabel').textContent = `Im(y) 固定値: ${state.fixedValue.toFixed(2)}`;
+        // Update slider label and current function display
+        updateFunctionDescription();
+        
+        drawCoordSystem();
+        createSurface();
+    }
+    
+    function updateFunctionDescription() {
+        const funcNames = {
+            'z2': '(a+bi)²',
+            'z3': '(a+bi)³',
+            'exp': 'e^(a+bi)',
+            'sin': 'sin(a+bi)',
+            'cos': 'cos(a+bi)'
+        };
+        
+        const funcName = funcNames[state.func] || 'f(a+bi)';
+        const fixedVal = state.fixedValue.toFixed(2);
+        
+        let fixedDesc;
+        if (state.fixedAxisType === 'y') {
+            // Im fixed: b is fixed
+            fixedDesc = `虚軸b=${fixedVal}固定`;
+            document.getElementById('sliderLabel').textContent = `Im 固定値: ${fixedVal}`;
         } else {
-            document.getElementById('sliderLabel').textContent = `Im(x) 固定値: ${state.fixedValue.toFixed(2)}`;
+            // Re fixed: a is fixed
+            fixedDesc = `実軸a=${fixedVal}固定`;
+            document.getElementById('sliderLabel').textContent = `Re 固定値: ${fixedVal}`;
         }
         
-        createSurface();
+        // Update current function description
+        document.getElementById('currentFunc').textContent = 
+            `${funcName} = α+βi [${fixedDesc}]`;
     }
     
     function toggleFormulas() {
@@ -910,6 +1184,75 @@
         });
     }
     
+    function keepCurrentGraph() {
+        if (!surface) return;
+        
+        // Clone the current surface
+        const clonedGeometry = surface.geometry.clone();
+        const clonedMaterial = surface.material.clone();
+        clonedMaterial.transparent = true;
+        clonedMaterial.opacity = 0.6; // Make kept graphs slightly transparent
+        
+        const keptMesh = new THREE.Mesh(clonedGeometry, clonedMaterial);
+        scene.add(keptMesh);
+        
+        const funcNames = {
+            'z2': 'z²',
+            'z3': 'z³',
+            'exp': 'e^z',
+            'sin': 'sin(z)',
+            'cos': 'cos(z)'
+        };
+        
+        const graphInfo = {
+            mesh: keptMesh,
+            func: state.func,
+            fixedAxisType: state.fixedAxisType,
+            fixedValue: state.fixedValue,
+            name: `${funcNames[state.func]} [${state.fixedAxisType === 'y' ? 'Im' : 'Re'}=${state.fixedValue.toFixed(2)}]`
+        };
+        
+        keptGraphs.push(graphInfo);
+        updateKeptGraphsList();
+    }
+    
+    function updateKeptGraphsList() {
+        const container = document.getElementById('keptGraphs');
+        container.innerHTML = '';
+        
+        if (keptGraphs.length === 0) {
+            container.innerHTML = '<div style="font-size: 10px; opacity: 0.5;">保持中のグラフなし</div>';
+            return;
+        }
+        
+        keptGraphs.forEach((graph, index) => {
+            const div = document.createElement('div');
+            div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 3px; margin: 2px 0; background: rgba(100,100,100,0.3); border-radius: 3px; font-size: 10px;';
+            
+            const label = document.createElement('span');
+            label.textContent = graph.name;
+            label.style.flex = '1';
+            
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = '×';
+            deleteBtn.style.cssText = 'padding: 2px 6px; font-size: 12px; background: rgba(200,50,50,0.7); border: none; border-radius: 3px; cursor: pointer;';
+            deleteBtn.addEventListener('click', () => removeKeptGraph(index));
+            
+            div.appendChild(label);
+            div.appendChild(deleteBtn);
+            container.appendChild(div);
+        });
+    }
+    
+    function removeKeptGraph(index) {
+        const graph = keptGraphs[index];
+        scene.remove(graph.mesh);
+        graph.mesh.geometry.dispose();
+        graph.mesh.material.dispose();
+        keptGraphs.splice(index, 1);
+        updateKeptGraphsList();
+    }
+    
     document.getElementById('funcZ2').addEventListener('click', () => setFunc('z2'));
     document.getElementById('funcZ3').addEventListener('click', () => setFunc('z3'));
     document.getElementById('funcExp').addEventListener('click', () => setFunc('exp'));
@@ -920,19 +1263,56 @@
     document.getElementById('axisImY').addEventListener('click', () => setFixedAxis('y'));
     
     document.getElementById('toggleFormulas').addEventListener('click', toggleFormulas);
+    document.getElementById('keepGraph').addEventListener('click', keepCurrentGraph);
     
-    document.getElementById('fullscreenBtn').addEventListener('click', () => {
-        if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen();
-        } else if (document.documentElement.webkitRequestFullscreen) {
-            document.documentElement.webkitRequestFullscreen();
-        }
+    // UI collapse toggle
+    let uiCollapsed = false;
+    const toggleBtn = document.getElementById('uiToggle');
+    const uiPanel = document.getElementById('ui');
+    
+    console.log('Toggle button:', toggleBtn);
+    console.log('UI panel:', uiPanel);
+    console.log('Button position:', toggleBtn.getBoundingClientRect());
+    
+    function handleToggle(e) {
+        console.log('Toggle activated!', e.type);
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        
+        uiCollapsed = !uiCollapsed;
+        uiPanel.classList.toggle('collapsed', uiCollapsed);
+        toggleBtn.classList.toggle('collapsed', uiCollapsed);
+        toggleBtn.textContent = uiCollapsed ? '▶' : '◀';
+    }
+    
+    // Use capture phase to intercept events before they reach other handlers
+    toggleBtn.addEventListener('touchstart', handleToggle, { passive: false, capture: true });
+    toggleBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+    }, { passive: false, capture: true });
+    toggleBtn.addEventListener('click', handleToggle, { capture: true });
+    
+    // Arrow buttons for fine-tuning fixed value
+    document.getElementById('decreaseFixed').addEventListener('click', () => {
+        state.fixedValue = Math.max(-5, state.fixedValue - 0.1);
+        document.getElementById('fixedValueSlider').value = state.fixedValue;
+        updateFunctionDescription();
+        createSurface();
+    });
+    
+    document.getElementById('increaseFixed').addEventListener('click', () => {
+        state.fixedValue = Math.min(5, state.fixedValue + 0.1);
+        document.getElementById('fixedValueSlider').value = state.fixedValue;
+        updateFunctionDescription();
+        createSurface();
     });
     
     document.getElementById('fixedValueSlider').addEventListener('input', (e) => {
         state.fixedValue = parseFloat(e.target.value);
-        const axisLabel = state.fixedAxisType === 'y' ? 'Im(y)' : 'Im(x)';
-        document.getElementById('sliderLabel').textContent = `${axisLabel} 固定値: ${state.fixedValue.toFixed(2)}`;
+        updateFunctionDescription();
         createSurface();
     });
     
@@ -991,6 +1371,8 @@
     });
     
     // Initialize
+    updateFunctionDescription();
+    updateKeptGraphsList();
     createSurface();
     animate();
 </script>
