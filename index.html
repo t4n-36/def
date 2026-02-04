@@ -1,1698 +1,2772 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>複素関数エクスプローラー</title>
+    <title>関数カードゲーム</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            overscroll-behavior: none;
         }
 
-```
-    html {
-        overflow: hidden;
-        touch-action: none;
-        overscroll-behavior: none;
-        height: 100vh;
-        height: 100dvh; /* Dynamic viewport height */
-    }
-    
-    body {
-        overflow: hidden;
-        font-family: 'Arial', sans-serif;
-        touch-action: none;
-        overscroll-behavior: none;
-        height: 100vh;
-        height: 100dvh;
-        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-    }
-    
-    #canvas {
-        display: block;
-        width: 100vw;
-        height: 100vh;
-        height: 100dvh;
-        position: fixed;
-        top: 0;
-        left: 0;
-        z-index: 0;
-    }
-    
-    #ui {
-        position: fixed;
-        top: 10px;
-        left: 10px;
-        color: white;
-        background: rgba(0, 0, 0, 0.7);
-        padding: 15px;
-        border-radius: 8px;
-        font-size: 14px;
-        z-index: 100;
-        max-width: 300px;
-        transition: transform 0.3s ease;
-        pointer-events: auto;
-    }
-    
-    #ui.collapsed {
-        transform: translateX(-330px);
-    }
-    
-    #uiToggle {
-        position: fixed;
-        top: 20px;
-        left: calc(10px + 300px + 15px + 10px);
-        color: white;
-        background: rgba(100, 100, 255, 0.9);
-        border: 2px solid rgba(255, 255, 255, 0.5);
-        padding: 12px 18px;
-        border-radius: 8px;
-        font-size: 20px;
-        font-weight: bold;
-        cursor: pointer;
-        z-index: 9999;
-        transition: left 0.3s ease;
-        pointer-events: auto;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        touch-action: manipulation;
-        -webkit-tap-highlight-color: rgba(255,255,255,0.3);
-    }
-    
-    #uiToggle.collapsed {
-        left: 10px;
-        background: rgba(100, 255, 100, 0.9);
-    }
-    
-    .button-group {
-        margin: 10px 0;
-    }
-    
-    button {
-        background: rgba(100, 100, 255, 0.8);
-        border: none;
-        color: white;
-        padding: 8px 12px;
-        margin: 3px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 12px;
-        transition: background 0.2s;
-    }
-    
-    button:hover {
-        background: rgba(120, 120, 255, 1);
-    }
-    
-    button.active {
-        background: rgba(255, 100, 100, 0.9);
-    }
-    
-    .func-btn {
-        background: rgba(240, 240, 250, 0.95);
-        border: 1px solid rgba(200, 200, 220, 0.5);
-        color: #333;
-        padding: 10px 4px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 13px;
-        font-weight: 500;
-        transition: background 0.15s;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        pointer-events: auto;
-        touch-action: manipulation;
-    }
-    
-    .func-btn:hover {
-        background: rgba(220, 220, 240, 1);
-    }
-    
-    .func-btn:active {
-        background: rgba(200, 200, 230, 1);
-        transform: scale(0.97);
-    }
-    
-    input[type="range"] {
-        width: 100%;
-        margin: 5px 0;
-    }
-    
-    /* Virtual Joysticks */
-    .joystick {
-        position: fixed;
-        width: 120px;
-        height: 120px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 2px solid rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        bottom: 30px;
-        display: none;
-        touch-action: none;
-        z-index: 1000;
-        transition: left 0.1s ease-out, bottom 0.1s ease-out;
-    }
-    
-    .joystick.active {
-        display: block;
-    }
-    
-    #leftJoystick {
-        left: 30px;
-    }
-    
-    .joystick-handle {
-        position: absolute;
-        width: 50px;
-        height: 50px;
-        background: rgba(255, 255, 255, 0.5);
-        border: 2px solid rgba(255, 255, 255, 0.8);
-        border-radius: 50%;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        touch-action: none;
-    }
-    
-    #info {
-        position: fixed;
-        bottom: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        color: white;
-        background: rgba(0, 0, 0, 0.7);
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-size: 12px;
-        text-align: center;
-        z-index: 100;
-        pointer-events: none;
-    }
-    
-    #coordSystem {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        width: 100px;
-        height: 100px;
-        pointer-events: none;
-        z-index: 100;
-    }
-    
-    @media (max-width: 768px) {
-        #ui {
-            font-size: 11px;
-            padding: 10px;
-            max-width: 200px;
+        :root {
+            --bg-primary: #f5f3ed;
+            --bg-paper: #fffef9;
+            --text-primary: #2d2d2d;
+            --text-secondary: #6b6b6b;
+            --accent-main: #d97757;
+            --accent-sub: #8b7355;
+            --card-plus: #e8dcc4;
+            --card-substitute: #d4c5a9;
+            --card-inverse: #c9b896;
+            --card-derivative: #b8d4c9;
+            --card-integral: #d4c9d4;
+            --card-multiply: #c9c9b8;
+            --card-sinify: #c9d4b8;
+            --card-expify: #d4b8c9;
+            --card-logify: #b8c9c9;
+            --card-limit: #d4b8b8;
+            --shadow-light: rgba(0, 0, 0, 0.08);
+            --shadow-medium: rgba(0, 0, 0, 0.12);
         }
-        
-        button {
-            padding: 6px 8px;
-            font-size: 10px;
-        }
-    }
-</style>
-```
 
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent-main);
+            margin-bottom: 20px;
+            letter-spacing: 0.1em;
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .btn-back, .btn-retry, .btn-help {
+            padding: 10px 24px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            background: var(--bg-paper);
+            color: var(--text-primary);
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.05em;
+            box-shadow: 0 2px 6px var(--shadow-light);
+        }
+
+        .btn-back:hover, .btn-retry:hover, .btn-help:hover {
+            background: var(--bg-primary);
+            transform: translateY(-2px);
+        }
+
+        .btn-retry {
+            background: linear-gradient(135deg, var(--accent-main), #e89577);
+            color: white;
+            border: none;
+        }
+
+        .btn-retry:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 4px 12px rgba(217, 119, 87, 0.4);
+        }
+
+        .btn-help {
+            background: linear-gradient(135deg, var(--accent-sub), #a08565);
+            color: white;
+            border: none;
+        }
+
+        .btn-help:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 4px 12px rgba(139, 115, 85, 0.4);
+        }
+
+        .battle-area {
+            background: var(--bg-paper);
+            border-radius: 8px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 8px var(--shadow-light);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .battle-area.active {
+            animation: battleGlow 0.6s ease-in-out;
+        }
+
+        @keyframes battleGlow {
+            0%, 100% {
+                box-shadow: 0 2px 8px var(--shadow-light);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(217, 119, 87, 0.3);
+            }
+        }
+
+        .function-display {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .function-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            letter-spacing: 0.05em;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .clear-condition {
+            font-size: 0.85rem;
+            color: var(--accent-main);
+            font-weight: 600;
+        }
+
+        .function-formula {
+            font-size: 2.5rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            letter-spacing: 0.05em;
+            transition: all 0.3s ease;
+        }
+
+        .function-formula.changing {
+            animation: functionChange 0.6s ease-in-out;
+        }
+
+        @keyframes functionChange {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            25% {
+                transform: scale(1.1);
+                opacity: 0.7;
+                color: var(--accent-main);
+            }
+            50% {
+                transform: scale(0.95);
+                opacity: 0.5;
+            }
+            75% {
+                transform: scale(1.05);
+                opacity: 0.8;
+                color: var(--accent-main);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .turn-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .turn-count {
+            color: var(--accent-main);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .hand-area {
+            margin-bottom: 30px;
+        }
+
+        .hand-label {
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            text-align: center;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+        }
+
+        .card-container {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            min-height: 180px;
+            padding: 20px;
+        }
+
+        .card {
+            width: 140px;
+            height: 190px;
+            background: var(--card-plus);
+            border-radius: 6px;
+            padding: 20px 16px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            box-shadow: 0 2px 6px var(--shadow-light);
+        }
+
+        .card.new-card {
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-80px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px var(--shadow-medium);
+        }
+
+        .card.selected {
+            transform: translateY(-8px);
+            box-shadow: 0 8px 20px rgba(217, 119, 87, 0.5);
+            border: 3px solid var(--accent-main);
+            outline: 2px solid rgba(217, 119, 87, 0.3);
+            outline-offset: 2px;
+        }
+
+        .card.substitute {
+            background: var(--card-substitute);
+        }
+
+        .card.inverse {
+            background: var(--card-inverse);
+        }
+
+        .card.derivative {
+            background: var(--card-derivative);
+        }
+
+        .card.integral {
+            background: var(--card-integral);
+        }
+
+        .card.multiply {
+            background: var(--card-multiply);
+        }
+
+        .card.sinify {
+            background: var(--card-sinify);
+        }
+
+        .card.expify {
+            background: var(--card-expify);
+        }
+
+        .card.logify {
+            background: var(--card-logify);
+        }
+
+        .card.limit {
+            background: var(--card-limit);
+        }
+
+        .card-level {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 26px;
+            height: 26px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--accent-main);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            z-index: 2;
+        }
+
+        .card-level.silver {
+            background: linear-gradient(135deg, #f5f5f5, #c0c0c0);
+            border: 2px solid #a8a8a8;
+            color: #5a5a5a;
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(192, 192, 192, 0.4);
+        }
+
+        .card-level.gold {
+            background: linear-gradient(135deg, #fff9e6, #ffd700);
+            border: 2px solid #d4af37;
+            color: #8b6914;
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(212, 175, 55, 0.5);
+        }
+
+        .card-effect {
+            font-size: 1.8rem;
+            font-weight: 700;
+            text-align: center;
+            color: var(--text-primary);
+            margin: auto 0;
+            letter-spacing: 0.02em;
+        }
+
+        .card-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .card-description {
+            font-size: 0.75rem;
+            text-align: center;
+            color: var(--text-secondary);
+            line-height: 1.3;
+            margin-top: auto;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 28px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            letter-spacing: 0.05em;
+            box-shadow: 0 2px 6px var(--shadow-light);
+        }
+
+        .btn-use {
+            background: var(--accent-main);
+            color: white;
+        }
+
+        .btn-use:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px var(--shadow-medium);
+        }
+
+        .btn-merge {
+            background: var(--accent-sub);
+            color: white;
+        }
+
+        .btn-merge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px var(--shadow-medium);
+        }
+
+        .btn-end {
+            background: var(--bg-paper);
+            color: var(--text-primary);
+            border: 1px solid rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-end:hover {
+            background: var(--bg-primary);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .merge-mode-indicator {
+            text-align: center;
+            padding: 12px;
+            background: #fff4e6;
+            border: 1px solid var(--accent-main);
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            color: var(--accent-main);
+        }
+
+        .log {
+            background: var(--bg-paper);
+            border-radius: 6px;
+            padding: 20px;
+            max-height: 180px;
+            overflow-y: auto;
+            box-shadow: 0 2px 6px var(--shadow-light);
+        }
+
+        .log-title {
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+            letter-spacing: 0.05em;
+        }
+
+        .log-entry {
+            padding: 6px 0;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-paper);
+            padding: 50px 40px;
+            border-radius: 8px;
+            text-align: center;
+            max-width: 400px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-content h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: var(--accent-main);
+        }
+
+        .modal-content.defeat h2 {
+            color: var(--text-secondary);
+        }
+
+        .modal-content p {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            color: var(--text-secondary);
+        }
+
+        /* カード詳細モーダルのスマホ対応 */
+        @media (max-width: 768px) {
+            #card-detail-modal .modal-content {
+                padding: 25px 18px;
+                width: 95%;
+                max-width: 95%;
+                max-height: 88vh;
+            }
+            
+            #card-detail-modal h2 {
+                font-size: 1.25rem !important;
+            }
+            
+            #card-detail-modal h3 {
+                font-size: 1.05rem !important;
+            }
+            
+            #card-detail-modal p {
+                font-size: 0.95rem !important;
+                line-height: 1.7 !important;
+            }
+            
+            #explanation-mode-banner {
+                padding: 12px;
+                font-size: 0.9rem;
+            }
+            
+            #explanation-mode-banner button {
+                margin-left: 10px;
+                padding: 6px 12px;
+                font-size: 0.85rem;
+            }
+        }
+
+        /* ステージ選択画面 */
+        .stage-select-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .stage-select-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-main);
+            margin-bottom: 60px;
+            letter-spacing: 0.15em;
+        }
+
+        .stage-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .stage-card {
+            background: var(--bg-paper);
+            border-radius: 8px;
+            padding: 32px 28px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: 0 2px 8px var(--shadow-light);
+        }
+
+        .stage-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px var(--shadow-medium);
+        }
+
+        .stage-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-main);
+            margin-bottom: 12px;
+            letter-spacing: 0.05em;
+        }
+
+        .stage-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .stage-description {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+
+        .stage-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .game-screen {
+            display: none;
+        }
+
+        .game-screen.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 15px 10px;
+            }
+
+            .title { 
+                font-size: 1.3rem;
+                margin-bottom: 10px;
+            }
+
+            .header-actions {
+                margin-bottom: 15px;
+            }
+
+            .btn-back {
+                padding: 8px 16px;
+                font-size: 0.85rem;
+            }
+
+            .battle-area {
+                padding: 20px 15px;
+                margin-bottom: 15px;
+            }
+
+            .function-label {
+                font-size: 0.8rem;
+                margin-bottom: 10px;
+                gap: 5px;
+            }
+
+            .clear-condition {
+                font-size: 0.75rem;
+            }
+
+            .function-formula { 
+                font-size: 1.8rem;
+            }
+
+            .turn-info {
+                padding: 12px 15px;
+                font-size: 0.9rem;
+            }
+
+            .turn-count {
+                font-size: 1.2rem;
+            }
+
+            .hand-label {
+                font-size: 0.9rem;
+                margin-bottom: 12px;
+            }
+
+            .card-container {
+                gap: 8px;
+                padding: 10px 5px;
+                min-height: 150px;
+            }
+
+            .card { 
+                width: 110px;
+                height: 155px;
+                padding: 14px 10px;
+            }
+
+            .card-name {
+                font-size: 0.75rem;
+                margin-bottom: 6px;
+            }
+
+            .card-effect {
+                font-size: 1.4rem;
+                margin: 8px 0;
+            }
+
+            .card-description {
+                font-size: 0.65rem;
+            }
+
+            .card-level {
+                width: 24px;
+                height: 24px;
+                font-size: 0.75rem;
+                top: 8px;
+                right: 8px;
+            }
+
+            .merge-mode-indicator {
+                padding: 10px;
+                margin-bottom: 12px;
+                font-size: 0.85rem;
+            }
+
+            .btn { 
+                padding: 11px 20px;
+                font-size: 0.9rem;
+                touch-action: manipulation;
+            }
+
+            .actions {
+                gap: 8px;
+                margin-bottom: 15px;
+            }
+
+            .log {
+                padding: 12px;
+                max-height: 100px;
+            }
+
+            .log-title {
+                font-size: 0.85rem;
+                margin-bottom: 8px;
+            }
+
+            .log-entry {
+                padding: 4px 0;
+                font-size: 0.75rem;
+            }
+
+            .stage-select-title {
+                font-size: 2rem;
+                margin-bottom: 40px;
+            }
+
+            .stage-grid {
+                gap: 20px;
+            }
+
+            .stage-card {
+                padding: 28px 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .game-container {
+                padding: 10px 8px;
+            }
+
+            .title {
+                font-size: 1.2rem;
+                margin-bottom: 8px;
+            }
+
+            .battle-area {
+                padding: 15px 12px;
+                margin-bottom: 12px;
+            }
+
+            .function-formula {
+                font-size: 1.6rem;
+            }
+
+            .card-container {
+                justify-content: center;
+                gap: 6px;
+                padding: 8px 5px;
+                min-height: 140px;
+            }
+
+            .card {
+                width: 105px;
+                height: 145px;
+                padding: 12px 8px;
+            }
+
+            .card-name {
+                font-size: 0.7rem;
+                margin-bottom: 5px;
+            }
+
+            .card-effect {
+                font-size: 1.3rem;
+                margin: 6px 0;
+            }
+
+            .card-description {
+                font-size: 0.6rem;
+            }
+
+            .card-level {
+                width: 22px;
+                height: 22px;
+                font-size: 0.7rem;
+                top: 6px;
+                right: 6px;
+            }
+
+            .btn {
+                padding: 10px 16px;
+                font-size: 0.85rem;
+            }
+
+            .log {
+                max-height: 80px;
+                padding: 10px;
+            }
+
+            .log-title {
+                font-size: 0.8rem;
+                margin-bottom: 6px;
+            }
+
+            .log-entry {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
 </head>
 <body>
-    <canvas id="canvas"></canvas>
+    <!-- ステージ選択画面 -->
+    <div class="stage-select-screen" id="stage-select">
+        <h1 class="stage-select-title">ステージ選択</h1>
+        <div class="stage-grid">
+            <div class="stage-card" onclick="startStage(1)">
+                <div class="stage-number">Stage 1</div>
+                <div class="stage-title">基礎演算 I</div>
+                <div class="stage-description">x=2を代入して0にせよ</div>
+                <div class="stage-info">
+                    <div>難易度: ★☆☆☆☆</div>
+                    <div>制限ターン: 3ターン</div>
+                    <div id="stage1-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
 
-```
-<div id="ui">
-    <div><strong>複素関数エクスプローラー</strong></div>
-    <div id="currentFunc" style="font-size: 12px; color: #88ff88; margin: 5px 0; padding: 5px; background: rgba(0,100,0,0.3); border-radius: 4px;">
-        (a+bi)² = α+βi [b=0.00固定]
-    </div>
-    <div class="button-group">
-        <div>関数:</div>
-        <button id="funcZ2" class="active">z²</button>
-        <button id="funcZ3">z³</button>
-        <button id="funcExp">e^z</button>
-        <button id="funcSin">sin(z)</button>
-        <button id="funcCos">cos(z)</button>
-    </div>
-    <div class="button-group">
-        <button id="openCustomKeyboard" style="width: 100%; background: rgba(150,100,255,0.6);">カスタム関数を構築</button>
-    </div>
-    <div class="button-group">
-        <div>固定軸:</div>
-        <button id="axisImX">Re(入力)固定</button>
-        <button id="axisImY" class="active">Im(入力)固定</button>
-    </div>
-    <div class="button-group">
-        <label id="sliderLabel">Im 固定値: 0.00</label>
-        <div style="display: flex; align-items: center; gap: 5px;">
-            <button id="decreaseFixed" style="padding: 5px 10px;">◀</button>
-            <input type="range" id="fixedValueSlider" min="-5" max="5" step="0.1" value="0" style="flex: 1;">
-            <button id="increaseFixed" style="padding: 5px 10px;">▶</button>
+            <div class="stage-card" onclick="startStage(2)">
+                <div class="stage-number">Stage 2</div>
+                <div class="stage-title">微分への道</div>
+                <div class="stage-description">3回微分して0にせよ</div>
+                <div class="stage-info">
+                    <div>難易度: ★☆☆☆☆</div>
+                    <div>制限ターン: 3ターン</div>
+                    <div id="stage2-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(3)">
+                <div class="stage-number">Stage 3</div>
+                <div class="stage-title">正確な係数</div>
+                <div class="stage-description">微分と倍化で 4x を作れ</div>
+                <div class="stage-info">
+                    <div>難易度: ★★☆☆☆</div>
+                    <div>制限ターン: 3ターン</div>
+                    <div id="stage3-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(4)">
+                <div class="stage-number">Stage 4</div>
+                <div class="stage-title">積分の理解</div>
+                <div class="stage-description">積分してからx=0で評価</div>
+                <div class="stage-info">
+                    <div>難易度: ★★☆☆☆</div>
+                    <div>制限ターン: 3ターン</div>
+                    <div id="stage4-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(5)">
+                <div class="stage-number">Stage 5</div>
+                <div class="stage-title">複雑な変換</div>
+                <div class="stage-description">2回微分し、係数を調整せよ</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★☆☆</div>
+                    <div>制限ターン: 4ターン</div>
+                    <div id="stage5-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(6)">
+                <div class="stage-number">Stage 6</div>
+                <div class="stage-title">逆転の発想</div>
+                <div class="stage-description">積分と倍化を駆使せよ</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★☆☆</div>
+                    <div>制限ターン: 4ターン</div>
+                    <div id="stage6-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(7)">
+                <div class="stage-number">Stage 7</div>
+                <div class="stage-title">sin関数の登場</div>
+                <div class="stage-description">sin関数を微分し、x=0で評価</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★☆☆</div>
+                    <div>制限ターン: 3ターン</div>
+                    <div id="stage7-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(8)">
+                <div class="stage-number">Stage 8</div>
+                <div class="stage-title">指数関数</div>
+                <div class="stage-description">ln変換してx=1で評価</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★☆</div>
+                    <div>制限ターン: 2ターン</div>
+                    <div id="stage8-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(9)">
+                <div class="stage-number">Stage 9</div>
+                <div class="stage-title">三角と指数の融合</div>
+                <div class="stage-description">sin変換後に微分を使いこなせ</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★☆</div>
+                    <div>制限ターン: 4ターン</div>
+                    <div id="stage9-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(10)">
+                <div class="stage-number">Stage 10</div>
+                <div class="stage-title">三角関数の微分サイクル</div>
+                <div class="stage-description">sin(x)を微分の循環で変換せよ</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★★</div>
+                    <div>制限ターン: 5ターン</div>
+                    <div id="stage10-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(11)" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.12), rgba(147, 112, 219, 0.08)); backdrop-filter: blur(10px); border: 1px solid rgba(106, 90, 205, 0.2); box-shadow: 0 4px 12px rgba(106, 90, 205, 0.15);">
+                <div class="stage-number" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.9), rgba(147, 112, 219, 0.9)); color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(106, 90, 205, 0.3);">Stage 11</div>
+                <div class="stage-title">2sin(x) + 3 を 0 に</div>
+                <div class="stage-description">2sin(x) + 3 を 0 に変換</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★★</div>
+                    <div>制限ターン: 4ターン</div>
+                    <div id="stage11-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(12)" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.12), rgba(147, 112, 219, 0.08)); backdrop-filter: blur(10px); border: 1px solid rgba(106, 90, 205, 0.2); box-shadow: 0 4px 12px rgba(106, 90, 205, 0.15);">
+                <div class="stage-number" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.9), rgba(147, 112, 219, 0.9)); color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(106, 90, 205, 0.3);">Stage 12</div>
+                <div class="stage-title">-cos(x) を -1 に</div>
+                <div class="stage-description">-cos(x) を -1 に変換</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★★</div>
+                    <div>制限ターン: 3ターン</div>
+                    <div id="stage12-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(13)" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.12), rgba(147, 112, 219, 0.08)); backdrop-filter: blur(10px); border: 1px solid rgba(106, 90, 205, 0.2); box-shadow: 0 4px 12px rgba(106, 90, 205, 0.15);">
+                <div class="stage-number" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.9), rgba(147, 112, 219, 0.9)); color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(106, 90, 205, 0.3);">Stage 13</div>
+                <div class="stage-title">e^x を 1 に</div>
+                <div class="stage-description">e^x を 1 に変換</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★★</div>
+                    <div>制限ターン: 3ターン</div>
+                    <div id="stage13-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(14)" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.12), rgba(147, 112, 219, 0.08)); backdrop-filter: blur(10px); border: 1px solid rgba(106, 90, 205, 0.2); box-shadow: 0 4px 12px rgba(106, 90, 205, 0.15);">
+                <div class="stage-number" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.9), rgba(147, 112, 219, 0.9)); color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(106, 90, 205, 0.3);">Stage 14</div>
+                <div class="stage-title">sin(x) を 1 に</div>
+                <div class="stage-description">sin(x) を 1 に変換</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★★</div>
+                    <div>制限ターン: 4ターン</div>
+                    <div id="stage14-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(15)" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.12), rgba(147, 112, 219, 0.08)); backdrop-filter: blur(10px); border: 1px solid rgba(106, 90, 205, 0.2); box-shadow: 0 4px 12px rgba(106, 90, 205, 0.15);">
+                <div class="stage-number" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.9), rgba(147, 112, 219, 0.9)); color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(106, 90, 205, 0.3);">Stage 15</div>
+                <div class="stage-title">cos(x) を 0 に</div>
+                <div class="stage-description">cos(x) を 0 に変換</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★★</div>
+                    <div>制限ターン: 4ターン</div>
+                    <div id="stage15-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(16)" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.12), rgba(147, 112, 219, 0.08)); backdrop-filter: blur(10px); border: 1px solid rgba(106, 90, 205, 0.2); box-shadow: 0 4px 12px rgba(106, 90, 205, 0.15);">
+                <div class="stage-number" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.9), rgba(147, 112, 219, 0.9)); color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(106, 90, 205, 0.3);">Stage 16</div>
+                <div class="stage-title">sin(x) + 3 を 0 に</div>
+                <div class="stage-description">sin(x) + 3 を 0 に変換</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★★</div>
+                    <div>制限ターン: 4ターン</div>
+                    <div id="stage16-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(17)" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.12), rgba(147, 112, 219, 0.08)); backdrop-filter: blur(10px); border: 1px solid rgba(106, 90, 205, 0.2); box-shadow: 0 4px 12px rgba(106, 90, 205, 0.15);">
+                <div class="stage-number" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.9), rgba(147, 112, 219, 0.9)); color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(106, 90, 205, 0.3);">Stage 17</div>
+                <div class="stage-title">e^x を 1 に (対数経由)</div>
+                <div class="stage-description">e^x を 1 に変換（対数を使用）</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★★</div>
+                    <div>制限ターン: 4ターン</div>
+                    <div id="stage17-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(18)" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.12), rgba(147, 112, 219, 0.08)); backdrop-filter: blur(10px); border: 1px solid rgba(106, 90, 205, 0.2); box-shadow: 0 4px 12px rgba(106, 90, 205, 0.15);">
+                <div class="stage-number" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.9), rgba(147, 112, 219, 0.9)); color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(106, 90, 205, 0.3);">Stage 18</div>
+                <div class="stage-title">cos(x) を 1 に</div>
+                <div class="stage-description">cos(x) を 1 に変換</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★★</div>
+                    <div>制限ターン: 4ターン</div>
+                    <div id="stage18-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(19)" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.12), rgba(147, 112, 219, 0.08)); backdrop-filter: blur(10px); border: 1px solid rgba(106, 90, 205, 0.2); box-shadow: 0 4px 12px rgba(106, 90, 205, 0.15);">
+                <div class="stage-number" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.9), rgba(147, 112, 219, 0.9)); color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(106, 90, 205, 0.3);">Stage 19</div>
+                <div class="stage-title">sin(x) を 0 に (連鎖)</div>
+                <div class="stage-description">sin(x) を 0 に変換（積分→微分）</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★★</div>
+                    <div>制限ターン: 5ターン</div>
+                    <div id="stage19-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="startStage(20)" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.12), rgba(147, 112, 219, 0.08)); backdrop-filter: blur(10px); border: 1px solid rgba(106, 90, 205, 0.2); box-shadow: 0 4px 12px rgba(106, 90, 205, 0.15);">
+                <div class="stage-number" style="background: linear-gradient(135deg, rgba(106, 90, 205, 0.9), rgba(147, 112, 219, 0.9)); color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(106, 90, 205, 0.3);">Stage 20</div>
+                <div class="stage-title">cos(x) を 0 に (総合)</div>
+                <div class="stage-description">cos(x) を 0 に変換（全技術使用）</div>
+                <div class="stage-info">
+                    <div>難易度: ★★★★★</div>
+                    <div>制限ターン: 6ターン</div>
+                    <div id="stage20-record" style="color: var(--accent-main); font-weight: 600; margin-top: 8px;">最速クリア: 未挑戦</div>
+                </div>
+            </div>
+
+            <div class="stage-card" onclick="window.open('https://t4n-36.github.io/def/', '_blank')" style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.12), rgba(255, 165, 0, 0.08)); backdrop-filter: blur(10px); border: 1px solid rgba(255, 165, 0, 0.3); box-shadow: 0 4px 12px rgba(255, 165, 0, 0.2);">
+                <div class="stage-number" style="background: linear-gradient(135deg, rgba(255, 165, 0, 0.9), rgba(255, 140, 0, 0.9)); color: white; padding: 8px 20px; border-radius: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(255, 165, 0, 0.4);">🌟 Extra</div>
+                <div class="stage-title">複素関数エクスプローラー</div>
+                <div class="stage-description">複素平面上で関数を視覚的に探索しよう</div>
+                <div class="stage-info">
+                    <div style="color: #ff8c00; font-weight: 600;">🔗 外部リンク</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">クリックで新しいタブで開きます</div>
+                </div>
+            </div>
         </div>
     </div>
-    <div class="button-group">
-        <button id="toggleFormulas">数式表示: OFF</button>
-        <button id="keepGraph" style="background: rgba(100, 200, 100, 0.5);">グラフ保持</button>
-    </div>
-    <div style="margin-top: 10px; font-size: 11px; opacity: 0.8;">
-        <div>PC: WASD移動, マウス視点</div>
-        <div>Space上昇, Ctrl下降, Shift走る</div>
-    </div>
-    <div id="keptGraphs" style="margin-top: 10px; max-height: 150px; overflow-y: auto;">
-        <!-- Kept graphs will appear here -->
-    </div>
-</div>
 
-<button id="uiToggle">◀</button>
+    <!-- ゲーム画面 -->
+    <div class="game-screen" id="game-screen">
+        <div class="game-container">
+            <h1 class="title">関数カードゲーム</h1>
 
-<div id="leftJoystick" class="joystick">
-    <div class="joystick-handle"></div>
-</div>
+            <div class="header-actions">
+                <button class="btn-back" onclick="backToStageSelect()">← ステージ選択に戻る</button>
+                <button class="btn-retry" onclick="retryStage()">🔄 リトライ</button>
+                <button class="btn-help" onclick="openHelpModal()">❓ カード説明</button>
+            </div>
 
-<div id="info">
-    位置: (0.00, 0.00, 0.00) | f(z) = 0.00 + 0.00i
-</div>
+            <div class="battle-area">
+                <!-- ステージ情報 -->
+                <div style="text-align: center; margin-bottom: 20px; font-size: 0.9rem; color: var(--text-secondary);" id="stage-info">
+                    Stage 1: 基礎演算 I
+                </div>
+                
+                <!-- 目標の関数 -->
+                <div class="function-display">
+                    <div class="function-label">
+                        <span>目標の関数</span>
+                        <span class="clear-condition" id="clear-condition-text">クリア条件: この関数を0にする</span>
+                    </div>
+                    <div class="function-formula" id="enemy-function">g(x) = x² - 6</div>
+                </div>
 
-<div id="coordSystem"></div>
+                <!-- ターン情報 -->
+                <div class="turn-info">
+                    <span>残りターン</span>
+                    <span class="turn-count" id="turn-count">5</span>
+                </div>
+                
+                <!-- 次のカード表示 -->
+                <div style="text-align: center; margin-top: 12px; padding: 10px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 0.85rem; color: var(--text-secondary);">
+                    <span style="font-weight: 600;">次のカード:</span> <span id="next-card-display">-</span>
+                </div>
+            </div>
 
-<!-- Custom Function Keyboard Modal -->
-<div id="customKeyboardModal" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.98); padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px rgba(0,0,0,0.3); z-index: 10000; transform: translateY(100%); transition: transform 0.3s ease; pointer-events: auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <div style="font-size: 14px; font-weight: bold; color: #333;">カスタム関数</div>
-        <button id="closeKeyboard" style="background: rgba(200,50,50,0.8); color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 14px; pointer-events: auto;">閉じる</button>
-    </div>
-    <div id="customFuncDisplay" style="width: 100%; padding: 12px; background: #f5f5f5; border: 2px solid #ddd; border-radius: 8px; color: #333; font-size: 18px; min-height: 50px; margin-bottom: 10px; font-family: monospace; overflow-x: auto;">
-        
-    </div>
-    <!-- Row 1: x, y, π, e, numbers -->
-    <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin-bottom: 3px;">
-        <button class="func-btn" data-func="x">x</button>
-        <button class="func-btn" data-func="y">y</button>
-        <button class="func-btn" data-func="π">π</button>
-        <button class="func-btn" data-func="e">e</button>
-        <button class="func-btn" data-func="7">7</button>
-        <button class="func-btn" data-func="8">8</button>
-        <button class="func-btn" data-func="9">9</button>
-        <button class="func-btn" data-func="*">×</button>
-    </div>
-    <!-- Row 2: powers and numbers -->
-    <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin-bottom: 3px;">
-        <button class="func-btn" data-func="^2">x²</button>
-        <button class="func-btn" data-func="^">xʸ</button>
-        <button class="func-btn" data-func="sqrt(">√</button>
-        <button class="func-btn" data-func="abs">|x|</button>
-        <button class="func-btn" data-func="4">4</button>
-        <button class="func-btn" data-func="5">5</button>
-        <button class="func-btn" data-func="6">6</button>
-        <button class="func-btn" data-func="+">+</button>
-    </div>
-    <!-- Row 3: comparison and numbers -->
-    <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin-bottom: 3px;">
-        <button class="func-btn" data-func="<">&lt;</button>
-        <button class="func-btn" data-func=">">&gt;</button>
-        <button class="func-btn" data-func="!">!</button>
-        <button class="func-btn" data-func="/">/</button>
-        <button class="func-btn" data-func="1">1</button>
-        <button class="func-btn" data-func="2">2</button>
-        <button class="func-btn" data-func="3">3</button>
-        <button class="func-btn" data-func="-">−</button>
-    </div>
-    <!-- Row 4: special functions and numbers -->
-    <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin-bottom: 3px;">
-        <button class="func-btn" data-func="e^">eˣ</button>
-        <button class="func-btn" data-func="10^">10ˣ</button>
-        <button class="func-btn" data-func="sqrt">√x</button>
-        <button class="func-btn" data-func="!">x!</button>
-        <button class="func-btn" data-func="0">0</button>
-        <button class="func-btn" data-func="(">(</button>
-        <button class="func-btn" data-func=")">)</button>
-        <button class="func-btn" data-func="clear" style="background: rgba(150,150,150,0.7);">⌫</button>
-    </div>
-    <!-- Row 5: trig functions -->
-    <div style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin-bottom: 3px;">
-        <button class="func-btn" data-func="sin(">sin</button>
-        <button class="func-btn" data-func="cos(">cos</button>
-        <button class="func-btn" data-func="tan(">tan</button>
-        <button class="func-btn" data-func="%">%</button>
-        <button class="func-btn" data-func=".">.</button>
-        <button class="func-btn" data-func=",">,</button>
-        <button class="func-btn" data-func="^">^</button>
-        <button id="applyCustom" style="background: rgba(100,200,100,0.9); padding: 12px; font-size: 14px; border: 1px solid rgba(80,180,80,0.5); border-radius: 6px; color: white; cursor: pointer; font-weight: bold;">適用</button>
-    </div>
-    <!-- Row 6: inverse trig -->
-    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px;">
-        <button class="func-btn" data-func="ln(">ln</button>
-        <button class="func-btn" data-func="log(">log</button>
-        <button class="func-btn" data-func="exp(">exp</button>
-        <button class="func-btn" data-func="clearAll" style="background: rgba(200,50,50,0.7); color: white;">クリア</button>
-    </div>
-</div>
+            <!-- 合成モード表示 -->
+            <div class="merge-mode-indicator" id="merge-indicator" style="display: none;">
+                合成モード: 同じカードを2枚選択してください
+            </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-    // Game state
-    const state = {
-        mode: 'real', // 'real', 'imag', 'abs'
-        func: 'z2', // 'z2', 'z3', 'exp', 'sin', 'cos', 'custom'
-        customFuncStr: '', // User's custom function string
-        fixedAxis: true,
-        fixedAxisType: 'y', // 'x' or 'y' - which axis to fix (x=Re, y=Im)
-        fixedValue: 0,
-        isMobile: false,
-        showFormulas: false
-    };
-    
-    const keptGraphs = []; // Array to store kept graph meshes
-    
-    // Scene setup
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a2e);
-    scene.fog = new THREE.Fog(0x1a1a2e, 30, 150);
-    
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
-    camera.position.set(0, 5, 10);
-    
-    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-    scene.add(ambientLight);
-    
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(10, 20, 10);
-    scene.add(directionalLight);
-    
-    // Add grid and axes
-    function createAxesAndGrid() {
-        const gridSize = 200;
-        const gridDivisions = 200; // 1 unit per division now
-        
-        // Grid on XZ plane (ground)
-        const gridHelper = new THREE.GridHelper(gridSize, gridDivisions, 0x444444, 0x222222);
-        scene.add(gridHelper);
-        
-        // Main axes
-        const axesHelper = new THREE.AxesHelper(25);
-        scene.add(axesHelper);
-        
-        // Create thicker colored axes
-        const axesMaterial = {
-            x: new THREE.LineBasicMaterial({ color: 0xff0000, linewidth: 2 }),
-            y: new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 }),
-            z: new THREE.LineBasicMaterial({ color: 0x0000ff, linewidth: 2 })
+            <!-- 手札 -->
+            <div class="hand-area">
+                <div class="hand-label">手札</div>
+                <div class="card-container" id="hand"></div>
+            </div>
+
+            <!-- アクションボタン -->
+            <div class="actions">
+                <button class="btn btn-use" id="btn-use" onclick="useCard()" disabled>カード使用</button>
+                <button class="btn btn-merge" id="btn-merge" onclick="toggleMergeMode()">カード合成</button>
+            </div>
+
+            <!-- ログ -->
+            <div class="log">
+                <div class="log-title">行動ログ</div>
+                <div id="log"></div>
+            </div>
+
+            <!-- 勝敗モーダル -->
+            <div class="modal" id="modal">
+                <div class="modal-content" id="modal-content">
+                    <h2 id="modal-title"></h2>
+                    <p id="modal-message"></p>
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn btn-use" onclick="retryStage()">🔄 リトライ</button>
+                        <button class="btn btn-use" onclick="backToStageSelect()">ステージ選択に戻る</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- カード詳細説明モーダル -->
+            <div class="modal" id="card-detail-modal">
+                <div class="modal-content" style="max-width: 700px; max-height: 85vh; overflow-y: auto;">
+                    <h2 id="card-detail-title" style="margin-bottom: 20px; color: var(--accent-main);"></h2>
+                    <div id="card-detail-content" style="text-align: left; line-height: 1.8;">
+                        <!-- 動的に内容が入る -->
+                    </div>
+                    <button class="btn btn-use" style="margin-top: 20px;" onclick="closeCardDetailModal()">閉じる</button>
+                </div>
+            </div>
+
+            <!-- 説明モード表示 -->
+            <div id="explanation-mode-banner" style="display: none; position: fixed; top: 0; left: 0; right: 0; background: linear-gradient(135deg, var(--accent-sub), #a08565); color: white; padding: 15px; text-align: center; font-weight: 600; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                📖 カード説明モード：説明を見たいカードをタップしてください
+                <button onclick="exitExplanationMode()" style="margin-left: 20px; padding: 8px 16px; background: white; color: var(--accent-sub); border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">終了</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ステージデータ
+        const stageData = {
+            1: {
+                name: '代入の基本',
+                difficulty: 1,
+                enemyFunction: { coefficient: 1, exponent: 2, constant: -9 }, // x² - 9
+                initialHand: ['substitute', 'substitute', 'plus', 'substitute'],
+                cardQueue: ['substitute', 'plus', 'substitute', 'plus'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 0 }, // 0
+                description: '代入カードを合成して0にしよう'
+            },
+            2: {
+                name: '合成の練習',
+                difficulty: 1,
+                enemyFunction: { coefficient: 0.5, exponent: 2, constant: -5 }, // (1/2)x² - 5
+                initialHand: ['multiply', 'plus', 'substitute', 'substitute'],
+                cardQueue: ['substitute', 'derivative', 'substitute', 'substitute', 'plus'],
+                maxTurns: 6,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 0 }, // 0
+                description: '×2と+1を使って、代入で0にしよう'
+            },
+            3: {
+                name: '係数を揃える',
+                difficulty: 2,
+                enemyFunction: { coefficient: 1, exponent: 1, constant: 0 }, // x
+                initialHand: ['multiply', 'multiply', 'multiply', 'plus'],
+                cardQueue: ['plus', 'substitute', 'plus'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 8, exponent: 1, constant: 0 }, // 8x
+                description: '×2を3回使って8xにしよう'
+            },
+            4: {
+                name: '微分の導入',
+                difficulty: 2,
+                enemyFunction: { coefficient: 1, exponent: 3, constant: 0 }, // x³
+                initialHand: ['derivative', 'derivative', 'derivative', 'plus'],
+                cardQueue: ['plus', 'plus', 'plus'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 6 }, // 6
+                description: '微分を使って関数を変換しよう'
+            },
+            5: {
+                name: '積分の理解',
+                difficulty: 2,
+                enemyFunction: { coefficient: 6, exponent: 1, constant: 0 }, // 6x
+                initialHand: ['integral', 'plus', 'derivative', 'multiply'],
+                cardQueue: ['plus', 'plus', 'plus'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 3, exponent: 2, constant: 0 }, // 3x²
+                description: '積分を使って関数を変換しよう'
+            },
+            6: {
+                name: '微分の応用',
+                difficulty: 3,
+                enemyFunction: { coefficient: 1, exponent: 4, constant: 0 }, // x⁴
+                initialHand: ['derivative', 'derivative', 'derivative', 'multiply'],
+                cardQueue: ['plus', 'substitute', 'plus'],
+                maxTurns: 5,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 24, exponent: 1, constant: 0 }, // 24x
+                description: '微分を3回使って変換しよう'
+            },
+            7: {
+                name: '積分で構築',
+                difficulty: 3,
+                enemyFunction: { coefficient: 2, exponent: 1, constant: 0 }, // 2x
+                initialHand: ['integral', 'multiply', 'multiply', 'derivative'],
+                cardQueue: ['plus', 'substitute', 'plus'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 4, exponent: 2, constant: 0 }, // 4x²
+                description: '積分と×2を組み合わせよう'
+            },
+            8: {
+                name: '指数関数とlog',
+                difficulty: 4,
+                enemyFunction: { coefficient: 1, exponent: 1, constant: 0, funcType: 'exp' }, // e^x
+                initialHand: ['logify', 'substitute', 'plus', 'derivative'],
+                cardQueue: ['plus', 'plus', 'plus'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 1 }, // 1
+                description: 'log_eを活用して変換しよう'
+            },
+            9: {
+                name: 'sin関数の制御',
+                difficulty: 4,
+                enemyFunction: { coefficient: 1, exponent: 1, constant: 0, funcType: 'sin' }, // sin(x)
+                initialHand: ['substitute_pi', 'plus', 'derivative', 'substitute'],
+                cardQueue: ['plus', 'plus', 'plus'],
+                maxTurns: 3,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 0 }, // 0
+                description: 'sin関数を0にしよう'
+            },
+            10: {
+                name: '三角微分の周期性',
+                difficulty: 5,
+                enemyFunction: { coefficient: 1, exponent: 1, constant: 0, funcType: 'sin' }, // sin(x)
+                initialHand: ['derivative', 'derivative', 'multiply', 'substitute_pi'],
+                cardQueue: ['plus', 'derivative', 'integral'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 0 }, // 0
+                description: '微分を2回使い、係数調整してπ代入で0に'
+            },
+            11: {
+                name: '2sin(x) + 3 を 0 に',
+                difficulty: 7,
+                enemyFunction: { coefficient: 2, exponent: 1, constant: 3, funcType: 'sin' }, // 2sin(x) + 3
+                initialHand: ['derivative', 'derivative', 'limit_zero', 'plus'],
+                cardQueue: ['plus', 'plus', 'plus'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 0 }, // 0
+                description: '2sin(x) + 3 を 0 に変換'
+            },
+            12: {
+                name: '-cos(x) を -1 に',
+                difficulty: 7,
+                enemyFunction: { coefficient: -1, exponent: 1, constant: 0, funcType: 'cos' }, // -cos(x)
+                initialHand: ['derivative', 'derivative', 'limit_zero', 'plus'],
+                cardQueue: ['plus'],
+                maxTurns: 3,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: -1 }, // -1
+                description: '-cos(x) を -1 に変換'
+            },
+            13: {
+                name: 'e^x を 1 に',
+                difficulty: 8,
+                enemyFunction: { coefficient: 1, exponent: 1, constant: 0, funcType: 'exp' }, // e^x
+                initialHand: ['derivative', 'derivative', 'limit_zero', 'plus'],
+                cardQueue: ['plus'],
+                maxTurns: 3,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 1 }, // 1
+                description: 'e^x を 1 に変換'
+            },
+            14: {
+                name: 'sin(x) を 1 に',
+                difficulty: 8,
+                enemyFunction: { coefficient: 1, exponent: 1, constant: 0, funcType: 'sin' }, // sin(x)
+                initialHand: ['integral', 'integral', 'derivative', 'derivative'],
+                cardQueue: ['limit_zero', 'plus'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 1 }, // 1
+                description: 'sin(x) を 1 に変換'
+            },
+            15: {
+                name: 'cos(x) を 0 に',
+                difficulty: 9,
+                enemyFunction: { coefficient: 1, exponent: 1, constant: 0, funcType: 'cos' }, // cos(x)
+                initialHand: ['derivative', 'derivative', 'limit_zero', 'substitute_pi'],
+                cardQueue: ['plus', 'plus'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 0 }, // 0
+                description: 'cos(x) を 0 に変換'
+            },
+            16: {
+                name: 'sin(x) + 3 を 0 に',
+                difficulty: 9,
+                enemyFunction: { coefficient: 1, exponent: 1, constant: 3, funcType: 'sin' }, // sin(x) + 3
+                initialHand: ['derivative', 'derivative', 'limit_zero', 'plus'],
+                cardQueue: ['plus', 'plus'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 0 }, // 0
+                description: 'sin(x) + 3 を 0 に変換'
+            },
+            17: {
+                name: 'e^x を 1 に (対数経由)',
+                difficulty: 10,
+                enemyFunction: { coefficient: 1, exponent: 1, constant: 0, funcType: 'exp' }, // e^x
+                initialHand: ['logify', 'derivative', 'derivative', 'limit_zero'],
+                cardQueue: ['plus', 'plus'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 1 }, // 1
+                description: 'e^x を 1 に変換（対数を使用）'
+            },
+            18: {
+                name: 'cos(x) を 1 に',
+                difficulty: 10,
+                enemyFunction: { coefficient: 1, exponent: 1, constant: 0, funcType: 'cos' }, // cos(x)
+                initialHand: ['derivative', 'derivative', 'derivative', 'derivative'],
+                cardQueue: ['limit_zero', 'plus'],
+                maxTurns: 4,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 1 }, // 1
+                description: 'cos(x) を 1 に変換'
+            },
+            19: {
+                name: 'sin(x) を 0 に (連鎖)',
+                difficulty: 11,
+                enemyFunction: { coefficient: 1, exponent: 1, constant: 0, funcType: 'sin' }, // sin(x)
+                initialHand: ['integral', 'integral', 'derivative', 'derivative'],
+                cardQueue: ['derivative', 'derivative', 'limit_zero', 'plus'],
+                maxTurns: 5,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 0 }, // 0
+                description: 'sin(x) を 0 に変換（積分→微分）'
+            },
+            20: {
+                name: 'cos(x) を 0 に (総合)',
+                difficulty: 12,
+                enemyFunction: { coefficient: 1, exponent: 1, constant: 0, funcType: 'cos' }, // cos(x)
+                initialHand: ['integral', 'integral', 'derivative', 'derivative'],
+                cardQueue: ['derivative', 'derivative', 'limit_zero', 'substitute_pi', 'plus'],
+                maxTurns: 6,
+                clearCondition: 'target',
+                targetFunction: { coefficient: 0, exponent: 0, constant: 0 }, // 0
+                description: 'cos(x) を 0 に変換（全技術使用）'
+            }
         };
-        
-        // X axis (red) - Re(z)
-        const xGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(-100, 0, 0),
-            new THREE.Vector3(100, 0, 0)
-        ]);
-        const xAxis = new THREE.Line(xGeometry, axesMaterial.x);
-        scene.add(xAxis);
-        
-        // Y axis (green) - Re(f) or Im(f)
-        const yGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(0, -100, 0),
-            new THREE.Vector3(0, 100, 0)
-        ]);
-        const yAxis = new THREE.Line(yGeometry, axesMaterial.y);
-        scene.add(yAxis);
-        
-        // Z axis (blue) - Im(z)
-        const zGeometry = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(0, 0, -100),
-            new THREE.Vector3(0, 0, 100)
-        ]);
-        const zAxis = new THREE.Line(zGeometry, axesMaterial.z);
-        scene.add(zAxis);
-        
-        // Add tick marks every 1 unit
-        const tickSize = 0.2;
-        const tickMaterial = new THREE.LineBasicMaterial({ color: 0x888888 });
-        
-        for (let i = -100; i <= 100; i += 1) {
-            if (Math.abs(i) < 0.01) continue; // Skip origin
-            
-            // X axis ticks
-            const xTickGeom = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(i, -tickSize, 0),
-                new THREE.Vector3(i, tickSize, 0)
-            ]);
-            scene.add(new THREE.Line(xTickGeom, tickMaterial));
-            
-            // Y axis ticks
-            const yTickGeom = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(-tickSize, i, 0),
-                new THREE.Vector3(tickSize, i, 0)
-            ]);
-            scene.add(new THREE.Line(yTickGeom, tickMaterial));
-            
-            // Z axis ticks
-            const zTickGeom = new THREE.BufferGeometry().setFromPoints([
-                new THREE.Vector3(0, -tickSize, i),
-                new THREE.Vector3(0, tickSize, i)
-            ]);
-            scene.add(new THREE.Line(zTickGeom, tickMaterial));
-        }
-        
-        // Add spheres and text labels at every 5 units
-        const sphereGeometry = new THREE.SphereGeometry(0.15, 8, 8);
-        const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        
-        // Create canvas for text labels
-        function createTextSprite(text, color = '#ffffff') {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = 128;
-            canvas.height = 64;
-            
-            context.fillStyle = color;
-            context.font = 'Bold 40px Arial';
-            context.textAlign = 'center';
-            context.textBaseline = 'middle';
-            context.fillText(text, 64, 32);
-            
-            const texture = new THREE.CanvasTexture(canvas);
-            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-            const sprite = new THREE.Sprite(spriteMaterial);
-            sprite.scale.set(2, 1, 1);
-            
-            return sprite;
-        }
-        
-        for (let i = -100; i <= 100; i += 5) {
-            if (i === 0) continue;
-            
-            // X axis markers
-            const xSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            xSphere.position.set(i, 0, 0);
-            scene.add(xSphere);
-            
-            const xLabel = createTextSprite(i.toString(), '#ff8888');
-            xLabel.position.set(i, -1.5, 0);
-            scene.add(xLabel);
-            
-            // Y axis markers
-            const ySphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            ySphere.position.set(0, i, 0);
-            scene.add(ySphere);
-            
-            const yLabel = createTextSprite(i.toString(), '#88ff88');
-            yLabel.position.set(-1.5, i, 0);
-            scene.add(yLabel);
-            
-            // Z axis markers
-            const zSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
-            zSphere.position.set(0, 0, i);
-            scene.add(zSphere);
-            
-            const zLabel = createTextSprite(i.toString(), '#8888ff');
-            zLabel.position.set(0, -1.5, i);
-            scene.add(zLabel);
-        }
-    }
-    
-    createAxesAndGrid();
-    
-    // Create coordinate system display as static 2D image
-    const coordCanvas = document.createElement('canvas');
-    coordCanvas.width = 100;
-    coordCanvas.height = 100;
-    coordCanvas.style.borderRadius = '8px';
-    document.getElementById('coordSystem').appendChild(coordCanvas);
-    
-    const coordCtx = coordCanvas.getContext('2d');
-    
-    function drawCoordSystem() {
-        coordCtx.clearRect(0, 0, 100, 100);
-        
-        const centerX = 30;
-        const centerY = 60;
-        const axisLen = 35;
-        
-        coordCtx.lineWidth = 2;
-        coordCtx.lineCap = 'round';
-        
-        // Z axis (blue) - diagonal down-left
-        coordCtx.strokeStyle = '#4444ff';
-        coordCtx.beginPath();
-        coordCtx.moveTo(centerX, centerY);
-        coordCtx.lineTo(centerX - 20, centerY + 20);
-        coordCtx.stroke();
-        
-        // Arrow for Z
-        coordCtx.beginPath();
-        coordCtx.moveTo(centerX - 20, centerY + 20);
-        coordCtx.lineTo(centerX - 17, centerY + 17);
-        coordCtx.stroke();
-        coordCtx.beginPath();
-        coordCtx.moveTo(centerX - 20, centerY + 20);
-        coordCtx.lineTo(centerX - 17, centerY + 21);
-        coordCtx.stroke();
-        
-        // X axis (red) - horizontal right
-        coordCtx.strokeStyle = '#ff4444';
-        coordCtx.beginPath();
-        coordCtx.moveTo(centerX, centerY);
-        coordCtx.lineTo(centerX + axisLen, centerY);
-        coordCtx.stroke();
-        
-        // Arrow for X
-        coordCtx.beginPath();
-        coordCtx.moveTo(centerX + axisLen, centerY);
-        coordCtx.lineTo(centerX + axisLen - 6, centerY - 3);
-        coordCtx.stroke();
-        coordCtx.beginPath();
-        coordCtx.moveTo(centerX + axisLen, centerY);
-        coordCtx.lineTo(centerX + axisLen - 6, centerY + 3);
-        coordCtx.stroke();
-        
-        // Y axis (green) - vertical up
-        coordCtx.strokeStyle = '#44ff44';
-        coordCtx.beginPath();
-        coordCtx.moveTo(centerX, centerY);
-        coordCtx.lineTo(centerX, centerY - axisLen);
-        coordCtx.stroke();
-        
-        // Arrow for Y
-        coordCtx.beginPath();
-        coordCtx.moveTo(centerX, centerY - axisLen);
-        coordCtx.lineTo(centerX - 3, centerY - axisLen + 6);
-        coordCtx.stroke();
-        coordCtx.beginPath();
-        coordCtx.moveTo(centerX, centerY - axisLen);
-        coordCtx.lineTo(centerX + 3, centerY - axisLen + 6);
-        coordCtx.stroke();
-        
-        // Labels
-        coordCtx.font = 'bold 11px Arial';
-        
-        coordCtx.fillStyle = '#ff4444';
-        coordCtx.fillText('X', centerX + axisLen + 3, centerY + 4);
-        
-        coordCtx.fillStyle = '#44ff44';
-        coordCtx.fillText('Y', centerX + 3, centerY - axisLen - 3);
-        
-        coordCtx.fillStyle = '#4444ff';
-        coordCtx.font = 'bold 9px Arial';
-        const zLabel = state.fixedAxisType === 'y' ? 'Z:Im(y)' : 'Z:Im(x)';
-        coordCtx.fillText(zLabel, centerX - 28, centerY + 32);
-    }
-    
-    drawCoordSystem();
-    
-    // Complex function computation
-    function complexFunc(x, y, funcType) {
-        const z = { re: x, im: y };
-        let result = { re: 0, im: 0 };
-        
-        switch(funcType) {
-            case 'z2':
-                // z^2 = (x+iy)^2 = x^2 - y^2 + 2xyi
-                result.re = z.re * z.re - z.im * z.im;
-                result.im = 2 * z.re * z.im;
-                break;
-            case 'z3':
-                // z^3 = z^2 * z
-                const z2_re = z.re * z.re - z.im * z.im;
-                const z2_im = 2 * z.re * z.im;
-                result.re = z2_re * z.re - z2_im * z.im;
-                result.im = z2_re * z.im + z2_im * z.re;
-                break;
-            case 'exp':
-                // e^z = e^(x+iy) = e^x * (cos(y) + i*sin(y))
-                const expRe = Math.exp(z.re);
-                result.re = expRe * Math.cos(z.im);
-                result.im = expRe * Math.sin(z.im);
-                break;
-            case 'sin':
-                // sin(z) = sin(x+iy) = sin(x)cosh(y) + i*cos(x)sinh(y)
-                result.re = Math.sin(z.re) * Math.cosh(z.im);
-                result.im = Math.cos(z.re) * Math.sinh(z.im);
-                break;
-            case 'cos':
-                // cos(z) = cos(x+iy) = cos(x)cosh(y) - i*sin(x)sinh(y)
-                result.re = Math.cos(z.re) * Math.cosh(z.im);
-                result.im = -Math.sin(z.re) * Math.sinh(z.im);
-                break;
-            case 'custom':
-                // Evaluate custom function
-                try {
-                    result = evaluateCustomFunction(state.customFuncStr, z.re, z.im);
-                } catch (e) {
-                    console.error('Custom function error:', e);
-                    result = { re: 0, im: 0 };
-                }
-                break;
-        }
-        
-        return result;
-    }
-    
-    // Evaluate custom function string
-    function evaluateCustomFunction(funcStr, re, im) {
-        const z = { re, im };
-        
-        // Complex operations
-        const add = (a, b) => ({ re: a.re + b.re, im: a.im + b.im });
-        const sub = (a, b) => ({ re: a.re - b.re, im: a.im - b.im });
-        const mul = (a, b) => ({ re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re });
-        const div = (a, b) => {
-            const d = b.re * b.re + b.im * b.im;
-            return d === 0 ? {re:0,im:0} : { re: (a.re*b.re + a.im*b.im)/d, im: (a.im*b.re - a.re*b.im)/d };
+
+        // ゲーム状態
+        let gameState = {
+            currentStage: 1,
+            enemyFunction: { coefficient: 1, exponent: 2, constant: -6 },
+            hand: [],
+            selectedCardIndex: null,
+            mergeMode: false,
+            selectedForMerge: [],
+            remainingTurns: 5,
+            maxTurns: 5,
+            newCardIndices: [],
+            cardQueue: [], // 補充カードのキュー
+            cardQueueIndex: 0, // 現在の補充位置
+            explanationMode: false, // カード説明モード
+            operationHistory: [] // 操作履歴
         };
-        const pow = (z, n) => {
-            const r = Math.sqrt(z.re**2 + z.im**2);
-            if (r === 0) return {re:0,im:0};
-            const theta = Math.atan2(z.im, z.re);
-            const newR = Math.exp(n * Math.log(r));
-            const newTheta = n * theta;
-            return { re: newR * Math.cos(newTheta), im: newR * Math.sin(newTheta) };
+
+        // カードタイプ定義
+        const cardTypes = {
+            plus: { name: '+1カード', type: 'plus', description: 'f(x) + 1', color: 'plus' },
+            substitute: { name: 'x=1代入', type: 'substitute', description: 'f(1) を計算', color: 'substitute' },
+            substitute_pi: { name: 'x=π代入', type: 'substitute_pi', description: 'f(π) を計算', color: 'substitute' },
+            inverse: { name: '逆数カード', type: 'inverse', description: '1/f(x)', color: 'inverse' },
+            derivative: { name: '微分カード', type: 'derivative', description: "f'(x)", color: 'derivative' },
+            integral: { name: '積分カード', type: 'integral', description: '∫f(x)dx', color: 'integral' },
+            multiply: { name: '×2カード', type: 'multiply', description: '2×f(x)', color: 'multiply' },
+            sinify: { name: 'sin変換', type: 'sinify', description: 'sin(f(x))', color: 'sinify' },
+            expify: { name: '指数化', type: 'expify', description: 'e^(f(x))', color: 'expify' },
+            logify: { name: '対数化', type: 'logify', description: 'log_e(f(x))', color: 'logify' },
+            limit_zero: { name: '極限(x→0)', type: 'limit_zero', description: 'lim[x→0] f(x)', color: 'limit' }
         };
-        const cExp = (z) => { const e = Math.exp(z.re); return {re: e*Math.cos(z.im), im: e*Math.sin(z.im)}; };
-        const cSin = (z) => ({re: Math.sin(z.re)*Math.cosh(z.im), im: Math.cos(z.re)*Math.sinh(z.im)});
-        const cCos = (z) => ({re: Math.cos(z.re)*Math.cosh(z.im), im: -Math.sin(z.re)*Math.sinh(z.im)});
-        const cTan = (z) => div(cSin(z), cCos(z));
-        const cLn = (z) => {
-            const r = Math.sqrt(z.re**2 + z.im**2);
-            return r === 0 ? {re:-Infinity,im:0} : {re: Math.log(r), im: Math.atan2(z.im,z.re)};
-        };
-        
-        try {
-            let str = funcStr.trim().replace(/\s+/g, '');
+
+        // ゲーム初期化関数
+        function init(stageNum = 1) {
+            const stage = stageData[stageNum];
             
-            // Normalize symbols BEFORE variable replacement
-            str = str.replace(/√\(/g, 'sqrt(');
-            str = str.replace(/√/g, 'sqrt(') + (str.includes('√') && !str.includes('(') ? ')' : '');
-            str = str.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
-            str = str.replace(/²/g, '^2').replace(/³/g, '^3').replace(/⁴/g, '^4');
+            // ステージデータから初期化
+            gameState.currentStage = stageNum;
+            gameState.enemyFunction = { ...stage.enemyFunction };
+            gameState.maxTurns = stage.maxTurns;
+            gameState.remainingTurns = stage.maxTurns;
+            gameState.cardQueue = [...stage.cardQueue];
+            gameState.cardQueueIndex = 0;
+            gameState.operationHistory = []; // 操作履歴をクリア
             
-            // NOW replace variables
-            str = str.replace(/[xyz]/gi, 'V');
+            // 初期手札を配る
+            gameState.hand = stage.initialHand.map((type, i) => ({
+                ...cardTypes[type],
+                level: 1,
+                id: Date.now() + i
+            }));
             
-            // Recursive evaluator with proper operator precedence
-            let tempStore = {};
-            let tempCounter = 0;
+            // ステージ情報を表示
+            document.getElementById('stage-info').textContent = `Stage ${stageNum}: ${stage.name}`;
             
-            function eval_(expr) {
-                expr = expr.trim();
-                if (!expr) return {re:0,im:0};
+            // クリア条件を表示
+            let clearConditionText = '';
+            if (stage.clearCondition === 'zero') {
+                clearConditionText = 'クリア条件: この関数を0にする';
+            } else if (stage.clearCondition === 'constant') {
+                clearConditionText = 'クリア条件: この関数を定数にする';
+            } else if (stage.clearCondition === 'target' && stage.targetFunction) {
+                const targetStr = formatFunction(stage.targetFunction, 'h');
+                clearConditionText = `クリア条件: ${targetStr.replace('h(x) = ', '')} に変換する`;
+            }
+            document.getElementById('clear-condition-text').textContent = clearConditionText;
+            
+            renderHand();
+            renderFunction();
+            updateTurnCount();
+            updateNextCardDisplay();
+            addLog(`Stage ${stageNum}: ${stage.name} 開始！`);
+        }
+
+        // 手札を描画
+        function renderHand() {
+            const handElement = document.getElementById('hand');
+            handElement.innerHTML = '';
+
+            gameState.hand.forEach((card, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = `card ${card.color}`;
                 
-                // Check temp store
-                if (tempStore[expr]) return tempStore[expr];
-                
-                // Handle parentheses and functions
-                while (true) {
-                    let match = expr.match(/([a-z]+)?\(([^()]+)\)/i);
-                    if (!match) break;
-                    
-                    const func = (match[1] || '').toLowerCase();
-                    const inner = match[2];
-                    const innerVal = eval_(inner);
-                    
-                    let result;
-                    if (func === 'sin') result = cSin(innerVal);
-                    else if (func === 'cos') result = cCos(innerVal);
-                    else if (func === 'tan') result = cTan(innerVal);
-                    else if (func === 'exp') result = cExp(innerVal);
-                    else if (func === 'ln') result = cLn(innerVal);
-                    else if (func === 'log') result = div(cLn(innerVal), {re:Math.log(10),im:0});
-                    else if (func === 'sqrt') result = pow(innerVal, 0.5);
-                    else result = innerVal;
-                    
-                    const temp = `T${tempCounter++}`;
-                    tempStore[temp] = result;
-                    expr = expr.replace(match[0], temp);
+                // 新しいカードにのみアニメーションを適用
+                if (gameState.newCardIndices.includes(index)) {
+                    cardElement.classList.add('new-card');
                 }
                 
-                // Addition/Subtraction (lowest precedence)
-                for (let i = expr.length - 1; i > 0; i--) {
-                    if (expr[i] === '+') {
-                        return add(eval_(expr.slice(0,i)), eval_(expr.slice(i+1)));
-                    }
-                    if (expr[i] === '-' && /[0-9VT)]/.test(expr[i-1])) {
-                        return sub(eval_(expr.slice(0,i)), eval_(expr.slice(i+1)));
-                    }
+                if (gameState.selectedCardIndex === index && !gameState.mergeMode) {
+                    cardElement.classList.add('selected');
                 }
-                
-                // Multiplication/Division
-                for (let i = expr.length - 1; i > 0; i--) {
-                    if (expr[i] === '*') return mul(eval_(expr.slice(0,i)), eval_(expr.slice(i+1)));
-                    if (expr[i] === '/') return div(eval_(expr.slice(0,i)), eval_(expr.slice(i+1)));
+
+                if (gameState.mergeMode && gameState.selectedForMerge.includes(index)) {
+                    cardElement.classList.add('selected');
                 }
-                
-                // Exponentiation (highest precedence)
-                const powIdx = expr.indexOf('^');
-                if (powIdx > 0) {
-                    const base = eval_(expr.slice(0, powIdx));
-                    const exp = parseFloat(expr.slice(powIdx+1));
-                    return isNaN(exp) ? {re:0,im:0} : pow(base, exp);
+
+                // レベル表示のスタイル
+                let levelClass = '';
+                if (card.level === 2) {
+                    levelClass = 'silver';
+                } else if (card.level >= 3) {
+                    levelClass = 'gold';
                 }
-                
-                // Constants and variables
-                if (expr === 'V') return z;
-                if (expr === 'e') return {re: Math.E, im:0};
-                if (expr === 'π' || expr.toLowerCase() === 'pi') return {re: Math.PI, im:0};
-                
-                const num = parseFloat(expr);
-                return isNaN(num) ? {re:0,im:0} : {re:num, im:0};
+
+                // カード中央の効果表示
+                const centerEffect = getCardCenterEffect(card);
+                const displayName = getCardDisplayName(card);
+
+                cardElement.innerHTML = `
+                    <div class="card-level ${levelClass}">Lv${card.level}</div>
+                    <div class="card-name">${displayName}</div>
+                    <div class="card-effect">${centerEffect}</div>
+                    <div class="card-description">${getCardDescription(card)}</div>
+                `;
+
+                cardElement.onclick = () => selectCard(index);
+                handElement.appendChild(cardElement);
+            });
+
+            // アニメーション終了後、newCardIndicesをクリア
+            if (gameState.newCardIndices.length > 0) {
+                setTimeout(() => {
+                    gameState.newCardIndices = [];
+                }, 400);
             }
-            
-            return eval_(str);
-            
-        } catch (e) {
-            console.error('Parse error:', e, 'Input:', funcStr);
-            return {re:0,im:0};
         }
-    }
-    
-    function getHeight(x, z) {
-        // x = Re(z), z = Im(z) in 3D space
-        const result = complexFunc(x, z, state.func);
-        
-        switch(state.mode) {
-            case 'real':
-                return result.re;
-            case 'imag':
-                return result.im;
-            case 'abs':
-                return Math.sqrt(result.re * result.re + result.im * result.im);
-        }
-    }
-    
-    // Create surface
-    let surface;
-    let formulaLabels = []; // Store formula labels for toggling
-    
-    function createSurface() {
-        if (surface) {
-            scene.remove(surface);
-            surface.geometry.dispose();
-            surface.material.dispose();
-        }
-        
-        // Remove old formula labels
-        formulaLabels.forEach(label => scene.remove(label));
-        formulaLabels = [];
-        
-        // Check if custom function is valid
-        if (state.func === 'custom' && !state.customFuncStr) {
-            console.warn('No custom function defined');
-            return; // Don't draw anything
-        }
-        
-        // Fixed mode: Im(z) = fixedValue, draw (Re(z), Re(f), Im(f)) curve
-        const resolution = state.isMobile ? 800 : 1200;
-        const range = 40;
-        
-        const points = [];
-        const colors = [];
-        const labeledPositions = new Set(); // Track labeled positions
-        let allZero = true; // Check if function returns all zeros
-        
-        // Helper function to create formula text sprite
-        function createFormulaSprite(x, y, text) {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = 512;
-            canvas.height = 96;
-            
-            context.fillStyle = 'rgba(0, 0, 0, 0.8)';
-            context.fillRect(0, 0, canvas.width, canvas.height);
-            
-            context.fillStyle = '#ffffff';
-            context.font = 'Bold 28px Arial';
-            context.textAlign = 'center';
-            context.textBaseline = 'middle';
-            context.fillText(text, 256, 48);
-            
-            const texture = new THREE.CanvasTexture(canvas);
-            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
-            const sprite = new THREE.Sprite(spriteMaterial);
-            sprite.scale.set(6, 1.2, 1);
-            sprite.visible = state.showFormulas;
-            
-            return sprite;
-        }
-        
-        // Helper to format complex number nicely
-        function formatComplex(re, im, usePi = false) {
-            const epsilon = 0.01;
-            
-            // Handle π notation for sin/cos
-            if (usePi) {
-                const rePi = re / Math.PI;
-                const imPi = im / Math.PI;
-                
-                // Check if pure real
-                if (Math.abs(im) < epsilon) {
-                    if (Math.abs(re) < epsilon) return '0';
-                    if (Math.abs(rePi - Math.round(rePi)) < 0.1) {
-                        const val = Math.round(rePi);
-                        if (val === 1) return 'π';
-                        if (val === -1) return '-π';
-                        if (val === 0) return '0';
-                        return val + 'π';
-                    }
-                    return re.toFixed(1);
-                }
-                
-                // Check if pure imaginary
-                if (Math.abs(re) < epsilon) {
-                    if (Math.abs(imPi - Math.round(imPi)) < 0.1) {
-                        const val = Math.round(imPi);
-                        if (val === 1) return 'πi';
-                        if (val === -1) return '-πi';
-                        return val + 'πi';
-                    }
-                    return im.toFixed(1) + 'i';
-                }
-                
-                // Complex number
-                let result = Math.abs(re) < epsilon ? '' : re.toFixed(1);
-                if (im > epsilon) {
-                    result += (result ? '+' : '') + (Math.abs(im - 1) < epsilon ? '' : im.toFixed(1)) + 'i';
-                } else if (im < -epsilon) {
-                    result += (Math.abs(im + 1) < epsilon ? '-' : im.toFixed(1)) + 'i';
-                }
-                return result || '0';
-            }
-            
-            // Regular notation (no π)
-            if (Math.abs(im) < epsilon) {
-                return Math.abs(re) < epsilon ? '0' : re.toFixed(0);
-            }
-            if (Math.abs(re) < epsilon) {
-                const imVal = Math.round(im);
-                if (imVal === 1) return 'i';
-                if (imVal === -1) return '-i';
-                return imVal + 'i';
-            }
-            
-            const reStr = Math.round(re).toString();
-            const imVal = Math.round(im);
-            let imStr;
-            if (imVal === 1) {
-                imStr = '+i';
-            } else if (imVal === -1) {
-                imStr = '-i';
-            } else if (imVal > 0) {
-                imStr = '+' + imVal + 'i';
-            } else {
-                imStr = imVal + 'i';
-            }
-            
-            return reStr + imStr;
-        }
-        
-        // Get function name for display
-        function getFuncName() {
-            const names = {
-                'z2': 'z²',
-                'z3': 'z³',
-                'exp': 'e^z',
-                'sin': 'sin(z)',
-                'cos': 'cos(z)'
-            };
-            return names[state.func] || 'f(z)';
-        }
-        
-        for (let i = 0; i <= resolution; i++) {
-            const t = (i / resolution) * 2 - 1;
-            const realPart = t * range; // Real part from -range to +range
-            
-            let x, y; // x and y for the complex number z = x + iy
-            
-            if (state.fixedAxisType === 'y') {
-                // Im(y) fixed: z = x + i*fixedValue
-                x = realPart;
-                y = state.fixedValue;
-            } else {
-                // Im(x) fixed: z = fixedValue + i*y
-                x = state.fixedValue;
-                y = realPart;
-            }
-            
-            const result = complexFunc(x, y, state.func);
-            
-            // Check if result is non-zero
-            if (Math.abs(result.re) > 0.001 || Math.abs(result.im) > 0.001) {
-                allZero = false;
-            }
-            
-            // Clamp extreme values for e^z
-            const maxVal = 100;
-            const clampedRe = Math.max(-maxVal, Math.min(maxVal, result.re));
-            const clampedIm = Math.max(-maxVal, Math.min(maxVal, result.im));
-            
-            // Position depends on which axis is fixed
-            let position;
-            if (state.fixedAxisType === 'y') {
-                // Im(y) fixed: (Re(z), Re(f), Im(f))
-                position = new THREE.Vector3(
-                    x,           // X: Re(z)
-                    clampedRe,   // Y: Re(f)
-                    clampedIm    // Z: Im(f)
-                );
-            } else {
-                // Im(x) fixed: (Im(z), Re(f), Re(z))
-                position = new THREE.Vector3(
-                    y,           // X: Im(z)
-                    clampedRe,   // Y: Re(f)
-                    clampedIm    // Z: Im(f)
-                );
-            }
-            
-            points.push(position);
-            
-            // Add formula labels only when all coordinates are round numbers
-            const epsilon = 0.15;
-            const xRound = Math.abs(x - Math.round(x)) < epsilon;
-            const yRound = Math.abs(y - Math.round(y)) < epsilon;
-            const reRound = Math.abs(clampedRe - Math.round(clampedRe)) < 0.3; // Slightly more tolerant for output
-            const imRound = Math.abs(clampedIm - Math.round(clampedIm)) < 0.3;
-            
-            // Create unique key for this position to avoid duplicates
-            const posKey = `${Math.round(x)}_${Math.round(y)}`;
-            
-            // Show label if input is round AND output is reasonably round AND not already labeled
-            if (xRound && yRound && (reRound || imRound) && !labeledPositions.has(posKey)) {
-                labeledPositions.add(posKey);
-                
-                const usePi = state.func === 'sin' || state.func === 'cos';
-                
-                // For sin/cos, convert input to π notation
-                let zStr;
-                if (usePi) {
-                    // Divide by π to get the coefficient
-                    const xPi = x / Math.PI;
-                    const yPi = y / Math.PI;
-                    const innerStr = formatComplex(xPi, yPi, false);
-                    zStr = 'π(' + innerStr + ')';
+
+        // カード中央の効果表示を取得
+        function getCardCenterEffect(card) {
+            if (card.type === 'plus') {
+                return `+${card.level}`;
+            } else if (card.type === 'substitute') {
+                return `f(${card.level})`;
+            } else if (card.type === 'substitute_pi') {
+                return `f(π)`;
+            } else if (card.type === 'inverse') {
+                if (card.level % 2 === 0) {
+                    return 'f(x)/1';
                 } else {
-                    zStr = formatComplex(x, y, false);
+                    return '1/f(x)';
                 }
-                
-                const fStr = formatComplex(clampedRe, clampedIm, false);
-                const funcName = getFuncName();
-                
-                // Add parentheses for exponents
-                let displayFunc = funcName;
-                if (state.func === 'z2') {
-                    displayFunc = `(${zStr})²`;
-                } else if (state.func === 'z3') {
-                    displayFunc = `(${zStr})³`;
-                } else if (state.func === 'exp') {
-                    displayFunc = `e^(${zStr})`;
+            } else if (card.type === 'derivative') {
+                if (card.level === 1) {
+                    return "d/dx";
+                } else if (card.level === 2) {
+                    return "Σa<sub>n</sub>x<sup>n</sup>/n!";  // マクローリン展開の公式
                 } else {
-                    displayFunc = funcName.replace('z', zStr);
+                    return `d${card.level}/dx${card.level}`;
                 }
-                
-                // Use ≒ if value is approximate, = if exact
-                const isApprox = !reRound || !imRound;
-                const equalSign = isApprox ? '≒' : '=';
-                
-                const labelText = `${displayFunc} ${equalSign} ${fStr}`;
-                
-                const label = createFormulaSprite(
-                    position.x, 
-                    position.y, 
-                    labelText
-                );
-                label.position.copy(position);
-                label.position.y += 3; // Offset above the curve
-                scene.add(label);
-                formulaLabels.push(label);
-            }
-            
-            // Color based on |f|
-            const mag = Math.sqrt(clampedRe * clampedRe + clampedIm * clampedIm);
-            const t_color = Math.min(mag / 20, 1);
-            let color;
-            if (t_color < 0.5) {
-                const s = t_color * 2;
-                color = new THREE.Color(s, s, 1);
-            } else {
-                const s = (t_color - 0.5) * 2;
-                color = new THREE.Color(1, 1 - s, 1 - s);
-            }
-            colors.push(color);
-        }
-        
-        // If function returns all zeros, don't draw anything
-        if (allZero) {
-            console.warn('Function returns all zeros - not drawing');
-            return;
-        }
-        
-        // Add tube geometry for better visibility
-        const curve = new THREE.CatmullRomCurve3(points);
-        curve.curveType = 'catmullrom';
-        curve.tension = 0.5;
-        
-        const tubeGeometry = new THREE.TubeGeometry(
-            curve,
-            resolution * 3,
-            0.15,
-            16,
-            false
-        );
-        
-        // Create color attribute for tube
-        const tubeColors = new Float32Array(tubeGeometry.attributes.position.count * 3);
-        const tubePositions = tubeGeometry.attributes.position.array;
-        
-        for (let i = 0; i < tubePositions.length; i += 3) {
-            const x = tubePositions[i];
-            const y = tubePositions[i + 1];
-            const z = tubePositions[i + 2];
-            
-            // Find closest point on curve to determine color
-            const mag = Math.sqrt(y * y + z * z);
-            const t_color = Math.min(mag / 20, 1);
-            
-            let color;
-            if (t_color < 0.5) {
-                const s = t_color * 2;
-                color = new THREE.Color(s, s, 1);
-            } else {
-                const s = (t_color - 0.5) * 2;
-                color = new THREE.Color(1, 1 - s, 1 - s);
-            }
-            
-            tubeColors[i] = color.r;
-            tubeColors[i + 1] = color.g;
-            tubeColors[i + 2] = color.b;
-        }
-        
-        tubeGeometry.setAttribute('color', new THREE.BufferAttribute(tubeColors, 3));
-        
-        const tubeMaterial = new THREE.MeshPhongMaterial({
-            vertexColors: true,
-            shininess: 60,
-            specular: 0x444444
-        });
-        
-        surface = new THREE.Mesh(tubeGeometry, tubeMaterial);
-        scene.add(surface);
-    }
-    
-    // Player controls
-    const keys = {};
-    const moveSpeed = 0.2;
-    const runMultiplier = 1.8;
-    const mouseLookSpeed = 0.003;
-    const touchLookSpeed = 0.008;
-    
-    let pitch = 0;
-    let yaw = 0;
-    
-    // Virtual joystick state
-    const joysticks = {
-        left: { active: false, x: 0, y: 0, touchId: null }
-    };
-    
-    // Camera touch control
-    let cameraTouchId = null;
-    let lastTouchX = 0;
-    let lastTouchY = 0;
-    
-    // Track where each touch started to prevent crossover
-    const touchStartPositions = new Map();
-    
-    // Detect mobile
-    state.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (state.isMobile) {
-        document.getElementById('leftJoystick').classList.add('active');
-    }
-    
-    // Joystick handlers
-    let joystickBaseX = 0;
-    let joystickBaseY = 0;
-    
-    function handleJoystickStart(e, side) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // Don't allow joystick to start if camera touch is already active
-        if (cameraTouchId !== null) {
-            return;
-        }
-        
-        const touch = e.touches[0];
-        const joystick = joysticks.left;
-        
-        joystick.active = true;
-        joystick.touchId = touch.identifier;
-        
-        // Mark this touch as belonging to joystick
-        touchStartPositions.set(touch.identifier, 'joystick');
-        
-        // Store initial joystick base position
-        const element = document.getElementById(side + 'Joystick');
-        const rect = element.getBoundingClientRect();
-        joystickBaseX = rect.left + rect.width / 2;
-        joystickBaseY = rect.top + rect.height / 2;
-        
-        updateJoystick(touch, side);
-    }
-    
-    function handleJoystickEnd(e, side) {
-        e.stopPropagation();
-        const joystick = joysticks.left;
-        
-        // Check if the released touch is the joystick touch
-        for (let touch of e.changedTouches) {
-            if (touch.identifier === joystick.touchId) {
-                joystick.active = false;
-                joystick.x = 0;
-                joystick.y = 0;
-                joystick.touchId = null;
-                
-                // Clean up touch tracking
-                touchStartPositions.delete(touch.identifier);
-                
-                const handle = document.querySelector(`#${side}Joystick .joystick-handle`);
-                handle.style.transform = 'translate(-50%, -50%)';
-                
-                // Reset joystick position to original location
-                const element = document.getElementById(side + 'Joystick');
-                element.style.left = '30px';
-                element.style.bottom = '30px';
-                element.style.transform = 'none';
-            }
-        }
-    }
-    
-    function updateJoystick(touch, side) {
-        const element = document.getElementById(side + 'Joystick');
-        const maxRadius = 60; // Maximum distance from base before joystick moves
-        const followRadius = 40; // Radius within which joystick stays centered
-        
-        let deltaX = touch.clientX - joystickBaseX;
-        let deltaY = touch.clientY - joystickBaseY;
-        
-        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        
-        // If finger goes beyond max radius, move the joystick base
-        if (distance > maxRadius) {
-            const angle = Math.atan2(deltaY, deltaX);
-            const moveDistance = distance - maxRadius;
-            
-            // Move joystick base
-            const newBaseX = joystickBaseX + Math.cos(angle) * moveDistance;
-            const newBaseY = joystickBaseY + Math.sin(angle) * moveDistance;
-            
-            // Constrain joystick to screen bounds
-            const minX = 60;
-            const maxX = window.innerWidth - 60;
-            const minY = 60;
-            const maxY = window.innerHeight - 60;
-            
-            joystickBaseX = Math.max(minX, Math.min(maxX, newBaseX));
-            joystickBaseY = Math.max(minY, Math.min(maxY, newBaseY));
-            
-            // Update element position
-            element.style.left = `${joystickBaseX - 60}px`;
-            element.style.bottom = `${window.innerHeight - joystickBaseY - 60}px`;
-            
-            // Recalculate delta from new base
-            deltaX = touch.clientX - joystickBaseX;
-            deltaY = touch.clientY - joystickBaseY;
-        }
-        
-        // Clamp handle position within followRadius
-        const handleDistance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-        if (handleDistance > followRadius) {
-            const angle = Math.atan2(deltaY, deltaX);
-            deltaX = Math.cos(angle) * followRadius;
-            deltaY = Math.sin(angle) * followRadius;
-        }
-        
-        const joystick = joysticks.left;
-        joystick.x = deltaX / followRadius;
-        joystick.y = deltaY / followRadius;
-        
-        const handle = element.querySelector('.joystick-handle');
-        handle.style.transform = `translate(calc(-50% + ${deltaX}px), calc(-50% + ${deltaY}px))`;
-    }
-    
-    const leftJoystickElement = document.getElementById('leftJoystick');
-    
-    // Capture all touches on joystick element and prevent them from going to document
-    leftJoystickElement.addEventListener('touchstart', (e) => {
-        e.stopImmediatePropagation();
-        handleJoystickStart(e, 'left');
-    }, { passive: false, capture: true });
-    
-    leftJoystickElement.addEventListener('touchend', (e) => {
-        e.stopImmediatePropagation();
-        handleJoystickEnd(e, 'left');
-    }, { passive: false, capture: true });
-    
-    leftJoystickElement.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        
-        // Only update if joystick is active and this is specifically the joystick's touch
-        if (!joysticks.left.active) return;
-        
-        for (let touch of e.touches) {
-            if (touch.identifier === joysticks.left.touchId && 
-                touchStartPositions.get(touch.identifier) === 'joystick') {
-                updateJoystick(touch, 'left');
-                break; // Only process the joystick touch
-            }
-        }
-    }, { passive: false, capture: true });
-    
-    // Touch controls for camera (anywhere outside joystick)
-    document.addEventListener('touchstart', (e) => {
-        if (!state.isMobile) return;
-        
-        for (let touch of e.touches) {
-            // Skip if this touch is already assigned to joystick
-            if (touchStartPositions.get(touch.identifier) === 'joystick') {
-                continue;
-            }
-            
-            const element = document.elementFromPoint(touch.clientX, touch.clientY);
-            
-            // If touch is on keyboard modal, don't use for camera
-            if (element && element.closest('#customKeyboardModal')) {
-                continue;
-            }
-            
-            // If touch is not on joystick, UI, or toggle button - use for camera
-            if (!element || (!element.closest('#leftJoystick') && !element.closest('#ui') && element.id !== 'uiToggle')) {
-                e.preventDefault(); // Prevent scrolling
-                if (cameraTouchId === null) {
-                    cameraTouchId = touch.identifier;
-                    touchStartPositions.set(touch.identifier, 'camera');
-                    lastTouchX = touch.clientX;
-                    lastTouchY = touch.clientY;
+            } else if (card.type === 'integral') {
+                if (card.level === 1) {
+                    return "∫dx";
+                } else if (card.level === 2) {
+                    return "∫<sub>特殊</sub>";  // 特殊積分
+                } else {
+                    return `${'∫'.repeat(card.level)}dx`;
                 }
+            } else if (card.type === 'multiply') {
+                return `×${Math.pow(2, card.level)}`;
+            } else if (card.type === 'sinify') {
+                return 'sin( )';
+            } else if (card.type === 'expify') {
+                return 'e^( )';
+            } else if (card.type === 'logify') {
+                return 'log<sub>e</sub>( )';
+            } else if (card.type === 'limit_zero') {
+                return 'lim<br><span style="font-size:0.7em;">x→0</span>';
             }
+            return '';
         }
-    }, { passive: false });
-    
-    document.addEventListener('touchmove', (e) => {
-        if (!state.isMobile) return;
-        
-        for (let touch of e.touches) {
-            // Strictly check: only process if this touch is marked as camera AND is the active camera touch
-            if (touch.identifier === cameraTouchId && 
-                touchStartPositions.get(touch.identifier) === 'camera') {
-                e.preventDefault();
-                
-                const deltaX = touch.clientX - lastTouchX;
-                const deltaY = touch.clientY - lastTouchY;
-                
-                yaw -= deltaX * touchLookSpeed;
-                pitch -= deltaY * touchLookSpeed;
-                
-                lastTouchX = touch.clientX;
-                lastTouchY = touch.clientY;
+
+        // カードの表示名を取得（レベルに応じて変化）
+        function getCardDisplayName(card) {
+            if (card.type === 'derivative' && card.level === 2) {
+                return 'マクローリン展開';
+            } else if (card.type === 'integral' && card.level === 2) {
+                return '特殊積分';
             }
+            return card.name;
         }
-    }, { passive: false });
-    
-    document.addEventListener('touchend', (e) => {
-        for (let touch of e.changedTouches) {
-            if (touch.identifier === cameraTouchId) {
-                cameraTouchId = null;
-                touchStartPositions.delete(touch.identifier);
+
+        // カードの説明文を取得
+        function getCardDescription(card) {
+            if (card.type === 'plus') {
+                return card.level === 1 ? 'f(x) → f(x) + 1' : `f(x) → f(x) + ${card.level}`;
+            } else if (card.type === 'substitute') {
+                return `f(x) → f(${card.level})`;
+            } else if (card.type === 'substitute_pi') {
+                return `f(x) → f(π)`;
+            } else if (card.type === 'inverse') {
+                if (card.level === 1) return 'f(x) → 1/f(x)';
+                if (card.level % 2 === 0) return 'f(x) → f(x) (無効化)';
+                return 'f(x) → 1/f(x)';
+            } else if (card.type === 'derivative') {
+                if (card.level === 1) return "f(x) → f'(x)";
+                if (card.level === 2) return "マクローリン展開";
+                return `f(x) → f${"'".repeat(card.level)}(x)`;
+            } else if (card.type === 'integral') {
+                if (card.level === 1) return 'f(x) → ∫f(x)dx';
+                if (card.level === 2) return '特殊積分';
+                return `f(x) → ${'∫'.repeat(card.level)}f(x)${'dx'.repeat(card.level)}`;
+            } else if (card.type === 'multiply') {
+                const multiplier = Math.pow(2, card.level);
+                return `f(x) → ${multiplier}f(x)`;
+            } else if (card.type === 'sinify') {
+                return 'f(x) → sin(f(x))';
+            } else if (card.type === 'expify') {
+                return 'f(x) → e^(f(x))';
+            } else if (card.type === 'logify') {
+                return 'f(x) → log_e(f(x))';
+            } else if (card.type === 'limit_zero') {
+                return 'lim[x→0] f(x)';
             }
+            return card.description;
         }
-    });
-    
-    // Keyboard controls
-    window.addEventListener('keydown', (e) => {
-        keys[e.key.toLowerCase()] = true;
-        
-        // Function switching
-        if (e.key === 'q') setFunc('z2');
-        if (e.key === 'e') setFunc('z3');
-        if (e.key === 'r') setFunc('exp');
-    });
-    
-    window.addEventListener('keyup', (e) => {
-        keys[e.key.toLowerCase()] = false;
-    });
-    
-    // Mouse controls
-    let isPointerLocked = false;
-    
-    const canvas = document.getElementById('canvas');
-    
-    canvas.addEventListener('click', () => {
-        if (!state.isMobile) {
-            canvas.requestPointerLock();
-        }
-    });
-    
-    // Prevent all scrolling on canvas
-    canvas.addEventListener('wheel', (e) => e.preventDefault(), { passive: false });
-    
-    document.addEventListener('pointerlockchange', () => {
-        isPointerLocked = document.pointerLockElement === canvas;
-    });
-    
-    document.addEventListener('mousemove', (e) => {
-        if (isPointerLocked) {
-            yaw -= e.movementX * mouseLookSpeed;
-            pitch -= e.movementY * mouseLookSpeed;
-            // Remove pitch clamping for free rotation
-        }
-    });
-    
-    // UI handlers
-    function setFunc(func) {
-        state.func = func;
-        document.getElementById('funcZ2').classList.toggle('active', func === 'z2');
-        document.getElementById('funcZ3').classList.toggle('active', func === 'z3');
-        document.getElementById('funcExp').classList.toggle('active', func === 'exp');
-        document.getElementById('funcSin').classList.toggle('active', func === 'sin');
-        document.getElementById('funcCos').classList.toggle('active', func === 'cos');
-        updateFunctionDescription();
-        createSurface();
-    }
-    
-    function setFixedAxis(axisType) {
-        state.fixedAxisType = axisType;
-        document.getElementById('axisImX').classList.toggle('active', axisType === 'x');
-        document.getElementById('axisImY').classList.toggle('active', axisType === 'y');
-        
-        // Update slider label and current function display
-        updateFunctionDescription();
-        
-        drawCoordSystem();
-        createSurface();
-    }
-    
-    function updateFunctionDescription() {
-        const funcNames = {
-            'z2': '(a+bi)²',
-            'z3': '(a+bi)³',
-            'exp': 'e^(a+bi)',
-            'sin': 'sin(a+bi)',
-            'cos': 'cos(a+bi)',
-            'custom': state.customFuncStr || 'f(a+bi)'
-        };
-        
-        const funcName = funcNames[state.func] || 'f(a+bi)';
-        const fixedVal = state.fixedValue.toFixed(2);
-        
-        let fixedDesc;
-        if (state.fixedAxisType === 'y') {
-            // Fixing imaginary part of input: b is fixed
-            fixedDesc = `b=${fixedVal}固定 (Im(入力))`;
-            document.getElementById('sliderLabel').textContent = `Im(入力) 固定値: ${fixedVal}`;
-        } else {
-            // Fixing real part of input: a is fixed
-            fixedDesc = `a=${fixedVal}固定 (Re(入力))`;
-            document.getElementById('sliderLabel').textContent = `Re(入力) 固定値: ${fixedVal}`;
-        }
-        
-        // Update current function description
-        document.getElementById('currentFunc').textContent = 
-            `${funcName} = α+βi [${fixedDesc}]`;
-    }
-    
-    function toggleFormulas() {
-        state.showFormulas = !state.showFormulas;
-        document.getElementById('toggleFormulas').textContent = `数式表示: ${state.showFormulas ? 'ON' : 'OFF'}`;
-        document.getElementById('toggleFormulas').classList.toggle('active', state.showFormulas);
-        
-        // Toggle visibility of all formula labels
-        formulaLabels.forEach(label => {
-            label.visible = state.showFormulas;
-        });
-    }
-    
-    function keepCurrentGraph() {
-        if (!surface) return;
-        
-        // Clone the current surface
-        const clonedGeometry = surface.geometry.clone();
-        const clonedMaterial = surface.material.clone();
-        clonedMaterial.transparent = true;
-        clonedMaterial.opacity = 0.6; // Make kept graphs slightly transparent
-        
-        const keptMesh = new THREE.Mesh(clonedGeometry, clonedMaterial);
-        scene.add(keptMesh);
-        
-        const funcNames = {
-            'z2': 'z²',
-            'z3': 'z³',
-            'exp': 'e^z',
-            'sin': 'sin(z)',
-            'cos': 'cos(z)'
-        };
-        
-        const graphInfo = {
-            mesh: keptMesh,
-            func: state.func,
-            fixedAxisType: state.fixedAxisType,
-            fixedValue: state.fixedValue,
-            name: `${funcNames[state.func]} [${state.fixedAxisType === 'y' ? 'Im' : 'Re'}=${state.fixedValue.toFixed(2)}]`
-        };
-        
-        keptGraphs.push(graphInfo);
-        updateKeptGraphsList();
-    }
-    
-    function updateKeptGraphsList() {
-        const container = document.getElementById('keptGraphs');
-        container.innerHTML = '';
-        
-        if (keptGraphs.length === 0) {
-            container.innerHTML = '<div style="font-size: 10px; opacity: 0.5;">保持中のグラフなし</div>';
-            return;
-        }
-        
-        keptGraphs.forEach((graph, index) => {
-            const div = document.createElement('div');
-            div.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 3px; margin: 2px 0; background: rgba(100,100,100,0.3); border-radius: 3px; font-size: 10px;';
+
+        // カードを選択
+        function selectCard(index) {
+            // 説明モードの場合は詳細を表示
+            if (gameState.explanationMode) {
+                const card = gameState.hand[index];
+                showCardDetail(card);
+                return;
+            }
             
-            const label = document.createElement('span');
-            label.textContent = graph.name;
-            label.style.flex = '1';
+            if (gameState.mergeMode) {
+                // 合成モード
+                if (gameState.selectedForMerge.includes(index)) {
+                    gameState.selectedForMerge = gameState.selectedForMerge.filter(i => i !== index);
+                } else if (gameState.selectedForMerge.length < 2) {
+                    gameState.selectedForMerge.push(index);
+                }
+
+                // 2枚選択されたら合成実行
+                if (gameState.selectedForMerge.length === 2) {
+                    attemptMerge();
+                }
+            } else {
+                // 通常モード
+                gameState.selectedCardIndex = index;
+                document.getElementById('btn-use').disabled = false;
+            }
+            renderHand();
+        }
+
+        // カード使用
+        function useCard() {
+            if (gameState.selectedCardIndex === null) return;
+
+            const card = gameState.hand[gameState.selectedCardIndex];
             
-            const deleteBtn = document.createElement('button');
-            deleteBtn.textContent = '×';
-            deleteBtn.style.cssText = 'padding: 2px 6px; font-size: 12px; background: rgba(200,50,50,0.7); border: none; border-radius: 3px; cursor: pointer;';
-            deleteBtn.addEventListener('click', () => removeKeptGraph(index));
+            // 操作前の関数を記録
+            const beforeFunc = formatFunction({...gameState.enemyFunction}, 'g');
             
-            div.appendChild(label);
-            div.appendChild(deleteBtn);
-            container.appendChild(div);
-        });
-    }
-    
-    function removeKeptGraph(index) {
-        const graph = keptGraphs[index];
-        scene.remove(graph.mesh);
-        graph.mesh.geometry.dispose();
-        graph.mesh.material.dispose();
-        keptGraphs.splice(index, 1);
-        updateKeptGraphsList();
-    }
-    
-    document.getElementById('funcZ2').addEventListener('click', () => setFunc('z2'));
-    document.getElementById('funcZ3').addEventListener('click', () => setFunc('z3'));
-    document.getElementById('funcExp').addEventListener('click', () => setFunc('exp'));
-    document.getElementById('funcSin').addEventListener('click', () => setFunc('sin'));
-    document.getElementById('funcCos').addEventListener('click', () => setFunc('cos'));
-    
-    // Open custom keyboard modal
-    document.getElementById('openCustomKeyboard').addEventListener('click', () => {
-        const modal = document.getElementById('customKeyboardModal');
-        modal.style.display = 'block';
-        setTimeout(() => {
-            modal.style.transform = 'translateY(0)';
-        }, 10);
-    });
-    
-    // Close custom keyboard modal
-    document.getElementById('closeKeyboard').addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const modal = document.getElementById('customKeyboardModal');
-        modal.style.transform = 'translateY(100%)';
-        setTimeout(() => {
-            modal.style.display = 'none';
-        }, 300);
-    });
-    
-    // Apply custom function
-    document.getElementById('applyCustom').addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const customInput = document.getElementById('customFuncDisplay').textContent.trim();
-        if (customInput) {
-            state.customFuncStr = customInput;
-            state.func = 'custom';
-            // Deactivate all preset function buttons
-            document.getElementById('funcZ2').classList.remove('active');
-            document.getElementById('funcZ3').classList.remove('active');
-            document.getElementById('funcExp').classList.remove('active');
-            document.getElementById('funcSin').classList.remove('active');
-            document.getElementById('funcCos').classList.remove('active');
-            updateFunctionDescription();
-            createSurface();
+            // カード効果を適用
+            applyCardEffect(card, gameState.enemyFunction);
             
-            // Close the keyboard
-            const modal = document.getElementById('customKeyboardModal');
-            modal.style.transform = 'translateY(100%)';
+            // 操作後の関数を記録
+            const afterFunc = formatFunction({...gameState.enemyFunction}, 'g');
+            
+            // 表示名を取得
+            const displayName = getCardDisplayName(card);
+            
+            // 操作履歴に追加
+            gameState.operationHistory.push({
+                cardName: displayName,
+                before: beforeFunc,
+                after: afterFunc,
+                turn: gameState.maxTurns - gameState.remainingTurns + 1
+            });
+            
+            addLog(`${displayName} を使用`);
+
+            // カードを手札から削除
+            gameState.hand.splice(gameState.selectedCardIndex, 1);
+            gameState.selectedCardIndex = null;
+            document.getElementById('btn-use').disabled = true;
+
+            // ターン減少
+            gameState.remainingTurns--;
+            updateTurnCount();
+
+            // カードを補充（常に4枚をキープ）
+            if (gameState.hand.length < 4 && gameState.cardQueueIndex < gameState.cardQueue.length) {
+                const nextCardType = gameState.cardQueue[gameState.cardQueueIndex];
+                const newCard = { ...cardTypes[nextCardType], level: 1, id: Date.now() };
+                gameState.hand.unshift(newCard);
+                gameState.newCardIndices = [0];
+                gameState.cardQueueIndex++;
+                addLog(`${newCard.name} を補充`);
+            }
+
+            renderHand();
+            
+            // バトルエリアのグローエフェクト
+            const battleArea = document.querySelector('.battle-area');
+            battleArea.classList.add('active');
             setTimeout(() => {
-                modal.style.display = 'none';
-            }, 300);
-        }
-    });
-    
-    // Function keyboard buttons
-    document.querySelectorAll('.func-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const display = document.getElementById('customFuncDisplay');
-            const func = btn.getAttribute('data-func');
+                battleArea.classList.remove('active');
+            }, 600);
             
-            if (func === 'clear') {
-                // Delete last character
-                display.textContent = display.textContent.slice(0, -1);
-            } else if (func === 'clearAll') {
-                display.textContent = '';
-            } else {
-                display.textContent += func;
+            renderFunction();
+            updateNextCardDisplay();
+            
+            // ゲーム終了チェック
+            if (!checkGameEnd()) {
+                // ターン切れチェック
+                if (gameState.remainingTurns <= 0) {
+                    showModal('defeat', '失敗', 'ターン切れです。もう一度挑戦しよう！');
+                }
             }
-        });
-    });
-    
-    document.getElementById('axisImX').addEventListener('click', () => setFixedAxis('x'));
-    document.getElementById('axisImY').addEventListener('click', () => setFixedAxis('y'));
-    
-    document.getElementById('toggleFormulas').addEventListener('click', toggleFormulas);
-    document.getElementById('keepGraph').addEventListener('click', keepCurrentGraph);
-    
-    // UI collapse toggle
-    let uiCollapsed = false;
-    const toggleBtn = document.getElementById('uiToggle');
-    const uiPanel = document.getElementById('ui');
-    
-    console.log('Toggle button:', toggleBtn);
-    console.log('UI panel:', uiPanel);
-    console.log('Button position:', toggleBtn.getBoundingClientRect());
-    
-    function handleToggle(e) {
-        console.log('Toggle activated!', e.type);
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        
-        uiCollapsed = !uiCollapsed;
-        uiPanel.classList.toggle('collapsed', uiCollapsed);
-        toggleBtn.classList.toggle('collapsed', uiCollapsed);
-        toggleBtn.textContent = uiCollapsed ? '▶' : '◀';
-    }
-    
-    // Use capture phase to intercept events before they reach other handlers
-    toggleBtn.addEventListener('touchstart', handleToggle, { passive: false, capture: true });
-    toggleBtn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-    }, { passive: false, capture: true });
-    toggleBtn.addEventListener('click', handleToggle, { capture: true });
-    
-    // Arrow buttons for fine-tuning fixed value
-    document.getElementById('decreaseFixed').addEventListener('click', () => {
-        state.fixedValue = Math.max(-5, state.fixedValue - 0.1);
-        document.getElementById('fixedValueSlider').value = state.fixedValue;
-        updateFunctionDescription();
-        createSurface();
-    });
-    
-    document.getElementById('increaseFixed').addEventListener('click', () => {
-        state.fixedValue = Math.min(5, state.fixedValue + 0.1);
-        document.getElementById('fixedValueSlider').value = state.fixedValue;
-        updateFunctionDescription();
-        createSurface();
-    });
-    
-    document.getElementById('fixedValueSlider').addEventListener('input', (e) => {
-        state.fixedValue = parseFloat(e.target.value);
-        updateFunctionDescription();
-        createSurface();
-    });
-    
-    // Update loop
-    function updatePlayer() {
-        // Camera-relative movement vectors
-        const forward = new THREE.Vector3();
-        const right = new THREE.Vector3();
-        
-        // Get camera's forward and right vectors
-        camera.getWorldDirection(forward);
-        forward.normalize();
-        right.crossVectors(camera.up, forward).normalize();
-        
-        // Calculate speed (run if shift is held)
-        const currentSpeed = keys['shift'] ? moveSpeed * runMultiplier : moveSpeed;
-        
-        // Keyboard movement - now uses full 3D camera direction
-        if (keys['w']) camera.position.addScaledVector(forward, currentSpeed);
-        if (keys['s']) camera.position.addScaledVector(forward, -currentSpeed);
-        if (keys['a']) camera.position.addScaledVector(right, currentSpeed);
-        if (keys['d']) camera.position.addScaledVector(right, -currentSpeed);
-        if (keys[' ']) camera.position.y += currentSpeed;
-        if (keys['control']) camera.position.y -= currentSpeed;
-        
-        // Joystick movement (mobile) - also uses full 3D direction
-        if (state.isMobile && joysticks.left.active) {
-            camera.position.addScaledVector(forward, -joysticks.left.y * moveSpeed * 1.5);
-            camera.position.addScaledVector(right, -joysticks.left.x * moveSpeed * 1.5);
         }
-        
-        // Update camera rotation
-        camera.rotation.order = 'YXZ';
-        camera.rotation.y = yaw;
-        camera.rotation.x = pitch;
-        
-        // Update info display
-        const pos = camera.position;
-        const fResult = complexFunc(pos.x, state.fixedValue, state.func);
-        document.getElementById('info').textContent = 
-            `z = ${pos.x.toFixed(2)} + ${state.fixedValue.toFixed(2)}i | ` +
-            `f(z) = ${fResult.re.toFixed(2)} + ${fResult.im.toFixed(2)}i`;
-    }
-    
-    function animate() {
-        requestAnimationFrame(animate);
-        updatePlayer();
-        renderer.render(scene, camera);
-    }
-    
-    // Handle resize
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-    
-    // Initialize
-    updateFunctionDescription();
-    updateKeptGraphsList();
-    createSurface();
-    animate();
-</script>
-```
 
+        // 特殊関数にxを代入して定数に変換するヘルパー
+        function evaluateSpecialFunc(funcType, x) {
+            switch(funcType) {
+                case 'sin':     return Math.sin(x);
+                case 'cos':     return Math.cos(x);
+                case 'neg_sin': return -Math.sin(x);
+                case 'neg_cos': return -Math.cos(x);
+                case 'exp':     return Math.exp(x);
+                case 'log':     return Math.log(x);
+                default:        return null;
+            }
+        }
+
+        // カード効果を適用
+        function applyCardEffect(card, func) {
+            if (card.type === 'plus') {
+                // 全ての関数に定数を足せる
+                func.constant += card.level;
+            } else if (card.type === 'substitute' || card.type === 'substitute_pi') {
+                // 代入: x = n または x = π
+                const x = (card.type === 'substitute_pi') ? Math.PI : card.level;
+                
+                if (func.funcType) {
+                    // 特殊関数の代入: coef*f(x) + const
+                    const coef = func.coefficient;
+                    const cnst = func.constant;
+                    const result = coef * evaluateSpecialFunc(func.funcType, x) + cnst;
+                    delete func.funcType;
+                    func.coefficient = result;
+                    func.exponent = 0;
+                    func.constant = 0;
+                } else {
+                    // 通常の多項式の代入
+                    const result = func.coefficient * Math.pow(x, func.exponent) + func.constant;
+                    func.coefficient = result;
+                    func.exponent = 0;
+                    func.constant = 0;
+                }
+            } else if (card.type === 'inverse') {
+                if (card.level % 2 === 1) {
+                    if (func.exponent === 0) {
+                        const value = func.coefficient + func.constant;
+                        if (value !== 0) {
+                            func.coefficient = 1 / value;
+                            func.constant = 0;
+                        }
+                    } else {
+                        if (func.coefficient !== 0) {
+                            func.coefficient = 1 / func.coefficient;
+                            func.exponent = -func.exponent;
+                            if (func.constant !== 0) {
+                                func.constant = -func.constant / Math.abs(func.coefficient);
+                            }
+                        }
+                    }
+                }
+            } else if (card.type === 'derivative') {
+                if (card.level >= 2) {
+                    // ===== 微分Lv2: マクローリン展開 =====
+                    if (func.funcType === 'sin') {
+                        // coef*sin(x) + const → coef*x + const
+                        const coef = func.coefficient;
+                        const cnst = func.constant;
+                        delete func.funcType;
+                        func.coefficient = coef;
+                        func.exponent = 1;
+                        func.constant = cnst;
+                    } else if (func.funcType === 'cos') {
+                        // coef*cos(x) + const → coef*(1 - x²/2) + const = coef - coef*x²/2 + const
+                        const coef = func.coefficient;
+                        const cnst = func.constant;
+                        delete func.funcType;
+                        func.coefficient = -coef * 0.5;
+                        func.exponent = 2;
+                        func.constant = coef + cnst;
+                    } else if (func.funcType === 'neg_sin') {
+                        // coef*(-sin(x)) + const → coef*(-x) + const = -coef*x + const
+                        const coef = func.coefficient;
+                        const cnst = func.constant;
+                        delete func.funcType;
+                        func.coefficient = -coef;
+                        func.exponent = 1;
+                        func.constant = cnst;
+                    } else if (func.funcType === 'neg_cos') {
+                        // coef*(-cos(x)) + const → coef*(-(1 - x²/2)) + const = -coef + coef*x²/2 + const
+                        const coef = func.coefficient;
+                        const cnst = func.constant;
+                        delete func.funcType;
+                        func.coefficient = coef * 0.5;
+                        func.exponent = 2;
+                        func.constant = -coef + cnst;
+                    } else if (func.funcType === 'exp') {
+                        // coef*e^x + const → coef*(1 + x) + const = coef*x + (coef + const)
+                        const coef = func.coefficient;
+                        const cnst = func.constant;
+                        delete func.funcType;
+                        func.coefficient = coef;
+                        func.exponent = 1;
+                        func.constant = coef + cnst;
+                    } else {
+                        // 多項式はそのまま（変化なし）
+                    }
+                } else {
+                    // ===== 微分Lv1: 通常微分 =====
+                    // 三角関数の微分サイクル: sin→cos→-sin→-cos→sin
+                    if (func.funcType === 'sin') {
+                        func.funcType = 'cos';
+                    } else if (func.funcType === 'cos') {
+                        func.funcType = 'neg_sin';
+                    } else if (func.funcType === 'neg_sin') {
+                        func.funcType = 'neg_cos';
+                    } else if (func.funcType === 'neg_cos') {
+                        func.funcType = 'sin';
+                    } else if (func.funcType === 'exp') {
+                        // e^x → e^x (変化なし)
+                    } else {
+                        // 通常の微分: ax^n + c → n*a*x^(n-1)
+                        if (func.exponent > 0) {
+                            func.coefficient = func.coefficient * func.exponent;
+                            func.exponent = func.exponent - 1;
+                            func.constant = 0;
+                        } else {
+                            func.coefficient = 0;
+                            func.exponent = 0;
+                            func.constant = 0;
+                        }
+                    }
+                }
+            } else if (card.type === 'integral') {
+                if (card.level >= 2) {
+                    // ===== 積分Lv2: 特殊積分（三角関数の反導関数） =====
+                    // 積分サイクル: sin→-cos→-sin→cos→sin
+                    if (func.funcType === 'sin') {
+                        func.funcType = 'neg_cos';
+                    } else if (func.funcType === 'cos') {
+                        func.funcType = 'sin';
+                    } else if (func.funcType === 'neg_sin') {
+                        func.funcType = 'cos';
+                    } else if (func.funcType === 'neg_cos') {
+                        func.funcType = 'neg_sin';
+                    } else if (func.funcType === 'exp') {
+                        // e^x の積分も e^x
+                    } else {
+                        // 多項式は通常の積分と同じ
+                        func.coefficient = func.coefficient / (func.exponent + 1);
+                        func.exponent = func.exponent + 1;
+                    }
+                } else {
+                    // ===== 積分Lv1: 通常積分 =====
+                    // 特殊関数には効かない（Lv2が必要）
+                    if (!func.funcType) {
+                        func.coefficient = func.coefficient / (func.exponent + 1);
+                        func.exponent = func.exponent + 1;
+                    }
+                }
+            } else if (card.type === 'multiply') {
+                const multiplier = Math.pow(2, card.level);
+                // 全ての関数に係数をかけられる
+                func.coefficient = func.coefficient * multiplier;
+                func.constant = func.constant * multiplier;
+            } else if (card.type === 'sinify') {
+                func.funcType = 'sin';
+                func.coefficient = 1; func.exponent = 1; func.constant = 0;
+            } else if (card.type === 'expify') {
+                func.funcType = 'exp';
+                func.coefficient = 1; func.exponent = 1; func.constant = 0;
+            } else if (card.type === 'logify') {
+                if (func.funcType === 'exp') {
+                    delete func.funcType;
+                    func.coefficient = 1; func.exponent = 1; func.constant = 0;
+                } else {
+                    func.funcType = 'log';
+                    func.coefficient = 1; func.exponent = 1; func.constant = 0;
+                }
+            } else if (card.type === 'limit_zero') {
+                // 極限 x→0 の計算
+                // sin(x) → 0, cos(x) → 1, e^x → 1, x^n → 0, const → const
+                if (func.funcType) {
+                    // 特殊関数の極限
+                    const cnst = func.constant;  // 定数項は保持
+                    if (func.funcType === 'sin' || func.funcType === 'neg_sin') {
+                        // sin(x) → 0, -sin(x) → 0
+                        delete func.funcType;
+                        func.coefficient = 0;
+                        func.exponent = 0;
+                        func.constant = cnst;
+                    } else if (func.funcType === 'cos') {
+                        // cos(x) → 1
+                        const coef = func.coefficient;
+                        delete func.funcType;
+                        func.coefficient = coef;  // 係数×1 = 係数
+                        func.exponent = 0;
+                        func.constant = cnst;
+                    } else if (func.funcType === 'neg_cos') {
+                        // -cos(x) → -1
+                        const coef = func.coefficient;
+                        delete func.funcType;
+                        func.coefficient = -coef;  // 係数×(-1) = -係数
+                        func.exponent = 0;
+                        func.constant = cnst;
+                    } else if (func.funcType === 'exp') {
+                        // e^x → 1
+                        const coef = func.coefficient;
+                        delete func.funcType;
+                        func.coefficient = coef;  // 係数×1 = 係数
+                        func.exponent = 0;
+                        func.constant = cnst;
+                    } else {
+                        delete func.funcType;
+                        func.coefficient = 0;
+                        func.exponent = 0;
+                        func.constant = cnst;
+                    }
+                } else {
+                    // 多項式の極限: x→0 で定数項のみ残る
+                    func.coefficient = func.constant;
+                    func.exponent = 0;
+                    func.constant = 0;
+                }
+            }
+        }
+
+        // 関数を描画
+        function renderFunction() {
+            const element = document.getElementById('enemy-function');
+            
+            // アニメーションクラスを追加
+            element.classList.add('changing');
+            
+            // 新しい関数を表示
+            element.innerHTML = formatFunction(gameState.enemyFunction, 'g');
+            
+            // アニメーション終了後にクラスを削除
+            setTimeout(() => {
+                element.classList.remove('changing');
+            }, 600);
+        }
+
+        // 関数を整形
+        function formatFunction(func, fname) {
+            // 特殊関数タイプの処理（係数と定数項も考慮）
+            if (func.funcType === 'sin' || func.funcType === 'cos' || 
+                func.funcType === 'neg_sin' || func.funcType === 'neg_cos' || 
+                func.funcType === 'exp' || func.funcType === 'log') {
+                
+                let result = `${fname}(x) = `;
+                
+                // 係数部分
+                let coeffPart = '';
+                if (func.coefficient === 1) {
+                    coeffPart = '';
+                } else if (func.coefficient === -1) {
+                    coeffPart = '−';
+                } else if (func.coefficient === 0) {
+                    // 係数0の場合は定数項のみ
+                    const constValue = func.constant;
+                    if (Number.isInteger(constValue)) {
+                        return result + constValue;
+                    } else {
+                        return result + formatFraction(constValue);
+                    }
+                } else {
+                    if (Number.isInteger(func.coefficient)) {
+                        coeffPart = func.coefficient.toString();
+                    } else {
+                        if (func.coefficient < 0) {
+                            coeffPart = '−' + formatFraction(-func.coefficient);
+                        } else {
+                            coeffPart = formatFraction(func.coefficient);
+                        }
+                    }
+                }
+                
+                // 関数本体
+                let funcPart = '';
+                if (func.funcType === 'sin') {
+                    funcPart = 'sin(x)';
+                } else if (func.funcType === 'cos') {
+                    funcPart = 'cos(x)';
+                } else if (func.funcType === 'neg_sin') {
+                    funcPart = '−sin(x)';
+                } else if (func.funcType === 'neg_cos') {
+                    funcPart = '−cos(x)';
+                } else if (func.funcType === 'exp') {
+                    funcPart = 'e<sup>x</sup>';
+                } else if (func.funcType === 'log') {
+                    funcPart = 'log<sub>e</sub>(x)';
+                }
+                
+                result += coeffPart + funcPart;
+                
+                // 定数項
+                if (func.constant !== 0) {
+                    if (func.constant > 0) {
+                        result += ' + ' + (Number.isInteger(func.constant) ? func.constant : formatFraction(func.constant));
+                    } else {
+                        result += ' − ' + (Number.isInteger(-func.constant) ? -func.constant : formatFraction(-func.constant));
+                    }
+                }
+                
+                return result;
+            }
+            
+            let result = `${fname}(x) = `;
+            
+            // 定数のみの場合
+            if (func.exponent === 0) {
+                const value = func.coefficient + func.constant;
+                if (Math.abs(value) < 0.0001) {
+                    result += '0';
+                } else if (Number.isInteger(value)) {
+                    result += value;
+                } else {
+                    result += formatFraction(value);
+                }
+                return result;
+            }
+
+            // 係数
+            if (func.coefficient === 1) {
+                // 係数1は省略（何も書かない）
+            } else if (func.coefficient === -1) {
+                // 係数-1は「−」だけ
+                result += '−';
+            } else {
+                if (Number.isInteger(func.coefficient)) {
+                    result += func.coefficient;
+                } else {
+                    // 負の分数の場合は −分数 にする
+                    if (func.coefficient < 0) {
+                        result += '−' + formatFraction(-func.coefficient);
+                    } else {
+                        result += formatFraction(func.coefficient);
+                    }
+                }
+            }
+
+            // x^n
+            if (func.exponent === 1) {
+                result += 'x';
+            } else if (func.exponent !== 0) {
+                result += `x<sup>${func.exponent}</sup>`;
+            }
+
+            // 定数項
+            if (func.constant !== 0) {
+                if (func.constant > 0) {
+                    result += ' + ' + (Number.isInteger(func.constant) ? func.constant : formatFraction(func.constant));
+                } else {
+                    result += ' - ' + (Number.isInteger(-func.constant) ? -func.constant : formatFraction(-func.constant));
+                }
+            }
+
+            return result;
+        }
+
+        // 分数表記
+        function formatFraction(num) {
+            if (Number.isInteger(num)) return num.toString();
+            
+            const precision = 1000000;
+            let numerator = Math.round(num * precision);
+            let denominator = precision;
+            
+            const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+            const divisor = gcd(Math.abs(numerator), denominator);
+            numerator /= divisor;
+            denominator /= divisor;
+            
+            if (denominator === 1) return numerator.toString();
+            return `${numerator}/${denominator}`;
+        }
+
+        // 合成モード切り替え
+        function toggleMergeMode() {
+            gameState.mergeMode = !gameState.mergeMode;
+            gameState.selectedForMerge = [];
+            
+            if (gameState.mergeMode) {
+                document.getElementById('merge-indicator').style.display = 'block';
+                document.getElementById('btn-use').disabled = true;
+                gameState.selectedCardIndex = null;
+            } else {
+                document.getElementById('merge-indicator').style.display = 'none';
+            }
+            
+            renderHand();
+        }
+
+        // カード合成を試みる
+        function attemptMerge() {
+            const [index1, index2] = gameState.selectedForMerge;
+            const card1 = gameState.hand[index1];
+            const card2 = gameState.hand[index2];
+
+            if (card1.type === card2.type && card1.level === card2.level) {
+                // 合成成功
+                const newCard = {
+                    ...card1,
+                    level: card1.level + 1,
+                    id: Date.now()
+                };
+
+                // より左側のインデックスに新しいカードを配置
+                const keepIndex = Math.min(index1, index2);
+                const removeIndex = Math.max(index1, index2);
+                
+                // 削除してから挿入
+                gameState.hand.splice(removeIndex, 1);
+                gameState.hand.splice(keepIndex, 1, newCard);
+
+                addLog(`${card1.name} を合成してLv${newCard.level}にアップグレード`);
+                
+                gameState.mergeMode = false;
+                gameState.selectedForMerge = [];
+                document.getElementById('merge-indicator').style.display = 'none';
+
+                // ターン減少
+                gameState.remainingTurns--;
+                updateTurnCount();
+
+                // カードを補充（常に4枚をキープ）
+                while (gameState.hand.length < 4 && gameState.cardQueueIndex < gameState.cardQueue.length) {
+                    const nextCardType = gameState.cardQueue[gameState.cardQueueIndex];
+                    const plusCard = { ...cardTypes[nextCardType], level: 1, id: Date.now() + gameState.hand.length };
+                    gameState.hand.unshift(plusCard);
+                    gameState.cardQueueIndex++;
+                }
+                
+                // 新しく追加された補充カードにアニメーションを適用
+                if (gameState.hand.length === 4) {
+                    gameState.newCardIndices = [0];
+                } else {
+                    gameState.newCardIndices = [];
+                }
+                
+                renderHand();
+                updateNextCardDisplay();
+
+                // ターン切れチェック
+                if (gameState.remainingTurns <= 0) {
+                    showModal('defeat', '失敗', 'ターン切れです。もう一度挑戦しよう！');
+                }
+            } else {
+                addLog('合成失敗: 同じタイプ・同じレベルのカードを選択してください');
+                gameState.selectedForMerge = [];
+                renderHand();
+            }
+        }
+
+        // ターンカウント更新
+        function updateTurnCount() {
+            document.getElementById('turn-count').textContent = gameState.remainingTurns;
+        }
+
+        // 次のカード表示を更新
+        function updateNextCardDisplay() {
+            const nextCardElement = document.getElementById('next-card-display');
+            if (gameState.cardQueueIndex < gameState.cardQueue.length) {
+                const nextCardType = gameState.cardQueue[gameState.cardQueueIndex];
+                const nextCard = cardTypes[nextCardType];
+                nextCardElement.textContent = nextCard.name;
+                nextCardElement.style.color = 'var(--accent-main)';
+                nextCardElement.style.fontWeight = '600';
+            } else {
+                nextCardElement.textContent = 'なし';
+                nextCardElement.style.color = 'var(--text-secondary)';
+                nextCardElement.style.fontWeight = '400';
+            }
+        }
+
+        // ローカルストレージ関数
+        function saveBestClear(stage, turnsUsed) {
+            const key = `stage${stage}_best`;
+            const current = localStorage.getItem(key);
+            
+            if (!current || turnsUsed < parseInt(current)) {
+                localStorage.setItem(key, turnsUsed.toString());
+                return true; // 新記録
+            }
+            return false;
+        }
+
+        function getBestClear(stage) {
+            const key = `stage${stage}_best`;
+            const best = localStorage.getItem(key);
+            return best ? parseInt(best) : null;
+        }
+
+        function updateStageRecordDisplay() {
+            for (let i = 1; i <= 10; i++) {
+                const best = getBestClear(i);
+                const recordElement = document.getElementById(`stage${i}-record`);
+                if (recordElement) {
+                    if (best) {
+                        recordElement.textContent = `最速クリア: ${best}ターン消費`;
+                    } else {
+                        recordElement.textContent = '最速クリア: 未挑戦';
+                    }
+                }
+            }
+        }
+
+        // ゲーム終了チェック
+        function checkGameEnd() {
+            const func = gameState.enemyFunction;
+            const stage = stageData[gameState.currentStage];
+            const clearCondition = stage.clearCondition;
+            
+            // target条件: 指定の関数に一致
+            if (clearCondition === 'target' && stage.targetFunction) {
+                const target = stage.targetFunction;
+                let matched = false;
+
+                if (func.exponent === 0 && target.exponent === 0) {
+                    // 両方が定数の場合: coefficient+constant の合計で比較
+                    const funcVal = func.coefficient + func.constant;
+                    const targetVal = target.coefficient + target.constant;
+                    matched = Math.abs(funcVal - targetVal) < 0.0001;
+                } else {
+                    // 多項式の場合: 各フィールドを個別に比較
+                    matched = Math.abs(func.coefficient - target.coefficient) < 0.0001 &&
+                              func.exponent === target.exponent &&
+                              Math.abs(func.constant - target.constant) < 0.0001;
+                }
+
+                if (matched) {
+                    const turnsUsed = gameState.maxTurns - gameState.remainingTurns;
+                    const isNewRecord = saveBestClear(gameState.currentStage, turnsUsed);
+                    
+                    let message = `${turnsUsed}ターンでクリア！\n目標の関数に変換しました！`;
+                    if (isNewRecord) {
+                        message += '\n🎉 新記録達成！';
+                    }
+                    
+                    showModal('victory', 'クリア！', message);
+                    return true;
+                }
+            }
+            
+            // 定数になった場合
+            if (func.exponent === 0) {
+                const value = func.coefficient + func.constant;
+                
+                if (clearCondition === 'zero') {
+                    // 0にする条件
+                    if (Math.abs(value) < 0.0001 || value === 0) {
+                        const turnsUsed = gameState.maxTurns - gameState.remainingTurns;
+                        const isNewRecord = saveBestClear(gameState.currentStage, turnsUsed);
+                        
+                        let message = `${turnsUsed}ターンでクリア！`;
+                        if (isNewRecord) {
+                            message += '\n🎉 新記録達成！';
+                        }
+                        
+                        showModal('victory', 'クリア！', message);
+                        return true;
+                    }
+                } else if (clearCondition === 'constant') {
+                    // 定数にする条件
+                    const turnsUsed = gameState.maxTurns - gameState.remainingTurns;
+                    const isNewRecord = saveBestClear(gameState.currentStage, turnsUsed);
+                    
+                    let message = `${turnsUsed}ターンでクリア！\n関数を定数 ${value} にしました！`;
+                    if (isNewRecord) {
+                        message += '\n🎉 新記録達成！';
+                    }
+                    
+                    showModal('victory', 'クリア！', message);
+                    return true;
+                }
+            }
+            
+            // 未定義・発散チェック
+            const testValue = evaluateFunction(func);
+            if (isNaN(testValue) || !isFinite(testValue)) {
+                showModal('defeat', '失敗', '関数が未定義になりました...');
+                return true;
+            }
+
+            return false;
+        }
+
+        // 関数を評価（主にチェック用）
+        function evaluateFunction(func) {
+            if (func.exponent === 0) {
+                return func.coefficient + func.constant;
+            }
+            // x=1での評価（参考値として）
+            return func.coefficient * Math.pow(1, func.exponent) + func.constant;
+        }
+
+        // モーダル表示
+        function showModal(type, title, message) {
+            const modal = document.getElementById('modal');
+            const modalContent = document.getElementById('modal-content');
+            
+            modalContent.className = `modal-content ${type}`;
+            document.getElementById('modal-title').textContent = title;
+            
+            const messageElement = document.getElementById('modal-message');
+            
+            // 勝利時は操作履歴を追加
+            if (type === 'victory' && gameState.operationHistory.length > 0) {
+                let historyHTML = '<div style="margin-bottom: 20px; font-size: 1.05rem;">' + message + '</div>';
+                historyHTML += '<div style="text-align: left; margin-top: 20px; padding: 18px; background: var(--bg-primary); border-radius: 8px; max-height: 320px; overflow-y: auto;">';
+                historyHTML += '<h3 style="margin-bottom: 15px; color: var(--accent-main); font-size: 1.1rem; text-align: center;">📝 あなたの操作</h3>';
+                
+                gameState.operationHistory.forEach((op, index) => {
+                    historyHTML += `
+                        <div style="margin-bottom: 12px; padding: 12px; background: var(--bg-paper); border-radius: 6px; border-left: 3px solid var(--accent-main);">
+                            <div style="font-weight: 600; color: var(--accent-main); margin-bottom: 6px; font-size: 0.95rem;">
+                                ${op.turn}手目: ${op.cardName}
+                            </div>
+                            <div style="font-size: 0.88rem; line-height: 1.7; color: var(--text-primary);">
+                                ${op.before}<br>
+                                <span style="color: var(--accent-main); margin: 4px 0; display: inline-block;">↓</span><br>
+                                ${op.after}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                historyHTML += '</div>';
+                messageElement.innerHTML = historyHTML;
+            } else {
+                messageElement.textContent = message;
+            }
+            
+            modal.classList.add('active');
+        }
+
+        // ログ追加
+        function addLog(message) {
+            const log = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = message;
+            log.insertBefore(entry, log.firstChild);
+
+            while (log.children.length > 10) {
+                log.removeChild(log.lastChild);
+            }
+        }
+
+        // ステージ開始
+        function startStage(stageNumber) {
+            console.log('Starting stage:', stageNumber);
+            try {
+                document.getElementById('stage-select').style.display = 'none';
+                document.getElementById('game-screen').classList.add('active');
+                
+                init(stageNumber);
+            } catch (error) {
+                console.error('Error starting stage:', error);
+                alert('ステージ開始エラー: ' + error.message);
+            }
+        }
+
+        // ステージリトライ
+        function retryStage() {
+            document.getElementById('modal').classList.remove('active');
+            const currentStageNum = gameState.currentStage;
+            init(currentStageNum);
+        }
+
+        // カード説明モードを開始
+        function openHelpModal() {
+            gameState.explanationMode = true;
+            document.getElementById('explanation-mode-banner').style.display = 'block';
+            // 合成モードを解除
+            gameState.mergeMode = false;
+            gameState.selectedForMerge = [];
+            document.getElementById('merge-indicator').style.display = 'none';
+            renderHand();
+        }
+
+        // カード説明モードを終了
+        function exitExplanationMode() {
+            gameState.explanationMode = false;
+            document.getElementById('explanation-mode-banner').style.display = 'none';
+            renderHand();
+        }
+
+        // カード詳細モーダルを開く
+        function showCardDetail(card) {
+            const modal = document.getElementById('card-detail-modal');
+            const title = document.getElementById('card-detail-title');
+            const content = document.getElementById('card-detail-content');
+            
+            title.textContent = card.name + ' (レベル ' + card.level + ')';
+            content.innerHTML = getCardDetailHTML(card);
+            
+            modal.classList.add('active');
+        }
+
+        // カード詳細モーダルを閉じる
+        function closeCardDetailModal() {
+            document.getElementById('card-detail-modal').classList.remove('active');
+        }
+
+        // カード詳細のHTML生成
+        function getCardDetailHTML(card) {
+            let html = '';
+            
+            if (card.type === 'plus') {
+                html = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">📝 基本説明</h3>
+                        <p>関数に定数を足すカードです。関数全体の値を上下にずらします。</p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🎯 効果</h3>
+                        <p><strong>f(x) → f(x) + ${card.level}</strong></p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">💡 使用例</h3>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px;">
+                            <p><strong>例1:</strong> f(x) = x² に使用</p>
+                            <p>→ x² + ${card.level}</p>
+                            <p style="margin-top: 10px;"><strong>例2:</strong> f(x) = 2x - 3 に使用</p>
+                            <p>→ 2x - 3 + ${card.level} = 2x + ${card.level - 3}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🔄 合成</h3>
+                        <p>同じレベルの+1カード2枚を合成すると、レベルが上がります。</p>
+                        <p>レベル${card.level} × 2 → レベル${card.level + 1} (+${card.level + 1}カード)</p>
+                    </div>
+                `;
+            } else if (card.type === 'substitute' || card.type === 'substitute_pi') {
+                const value = card.type === 'substitute_pi' ? 'π ≈ 3.14...' : card.level;
+                const displayValue = card.type === 'substitute_pi' ? 'π' : card.level;
+                html = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">📝 基本説明</h3>
+                        <p>関数のxに具体的な数値を代入して、定数（数値）に変換するカードです。</p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🎯 効果</h3>
+                        <p><strong>f(x) → f(${displayValue})</strong></p>
+                        <p>xの代わりに${value}を入れて計算します。</p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">💡 使用例</h3>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px;">
+                            <p><strong>例1:</strong> f(x) = x² に使用</p>
+                            <p>→ (${displayValue})² ${card.type === 'substitute' ? `= ${card.level * card.level}` : '≈ 9.87'}</p>
+                            <p style="margin-top: 10px;"><strong>例2:</strong> f(x) = 2x - 4 に使用</p>
+                            <p>→ 2(${displayValue}) - 4 ${card.type === 'substitute' ? `= ${2 * card.level - 4}` : '≈ 2.28'}</p>
+                        </div>
+                    </div>
+                    ${card.type === 'substitute' ? `
+                    <div>
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🔄 合成</h3>
+                        <p>同じレベルの代入カード2枚を合成すると、代入する値が増えます。</p>
+                        <p>レベル${card.level} × 2 → レベル${card.level + 1} (x=${card.level + 1}代入)</p>
+                    </div>
+                    ` : ''}
+                `;
+            } else if (card.type === 'derivative') {
+                const isLv2 = card.level >= 2;
+                html = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">📝 基本説明</h3>
+                        <p>微分は「変化率」を求める操作です。関数の次数を1つ下げます。</p>
+                        ${isLv2 ? `<p style="margin-top: 12px; padding: 12px; background: rgba(106,90,205,0.12); border-left: 4px solid #6a5acd; border-radius: 4px;">
+                            <strong style="color: #6a5acd;">⭐ レベル2になると「マクローリン展開」になります！</strong><br>
+                            特殊関数を多項式に変換する強力な操作です。
+                        </p>` : ''}
+                    </div>
+                    ${isLv2 ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #6a5acd; margin-bottom: 10px;">🌟 マクローリン展開とは？</h3>
+                        <p style="margin-bottom: 10px;">任意の関数を「x=0の近くでの多項式」に近似する技法です。</p>
+                        <p style="margin-bottom: 12px;">イメージとして：まるっと複雑な関数を、シンプルなxの式に「解読」するようなものです。</p>
+                        <div style="background: rgba(106,90,205,0.08); padding: 15px; border-radius: 6px; margin-bottom: 12px;">
+                            <p style="font-weight: 600; margin-bottom: 8px; color: #6a5acd;">📐 マクローリン展開の公式:</p>
+                            <p style="text-align: center; font-size: 1.05rem; padding: 10px; background: white; border-radius: 4px;">
+                                f(x) = f(0) + f'(0)x + f''(0)x²/2! + f'''(0)x³/3! + ...
+                            </p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 8px;">
+                                x=0での関数の値と微分係数から、多項式を構成します
+                            </p>
+                        </div>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px; margin-top: 10px;">
+                            <p style="font-weight: 600; margin-bottom: 8px; color: #6a5acd;">このゲームでの展開結果:</p>
+                            <p>sin(x) → <strong>x − x³/6 + ...</strong></p>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-left: 16px;">≈ x (1次近似)</p>
+                            <p style="margin-top: 8px;">cos(x) → <strong>1 − x²/2 + x⁴/24 − ...</strong></p>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-left: 16px;">≈ 1 − (1/2)x² (2次近似)</p>
+                            <p style="margin-top: 8px;">−sin(x) → <strong>−x + x³/6 − ...</strong></p>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-left: 16px;">≈ −x (1次近似)</p>
+                            <p style="margin-top: 8px;">−cos(x) → <strong>−1 + x²/2 − x⁴/24 + ...</strong></p>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-left: 16px;">≈ −1 + (1/2)x² (2次近似)</p>
+                            <p style="margin-top: 8px;">e<sup>x</sup> → <strong>1 + x + x²/2 + x³/6 + ...</strong></p>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-left: 16px;">≈ 1 + x (1次近似)</p>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🔄 合成方法</h3>
+                        <p>微分Lv1 を <strong>2枚合成</strong> すると、微分Lv2（マクローリン展開）になります。</p>
+                    </div>
+                    ` : `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🎯 効果</h3>
+                        <p><strong>多項式:</strong> ax<sup>n</sup> → n × a × x<sup>n−1</sup></p>
+                        <p style="margin-top: 8px;"><strong>三角関数の微分サイクル:</strong></p>
+                        <div style="background: var(--bg-primary); padding: 12px; border-radius: 6px; margin-top: 8px; text-align: center; line-height: 2;">
+                            <p>sin(x) →<strong> cos(x)</strong></p>
+                            <p>cos(x) →<strong> −sin(x)</strong></p>
+                            <p>−sin(x) →<strong> −cos(x)</strong></p>
+                            <p>−cos(x) →<strong> sin(x)</strong>（元に戻る！）</p>
+                        </div>
+                        <p style="margin-top: 8px;"><strong>e<sup>x</sup>:</strong> 微分しても e<sup>x</sup>（変化なし）</p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">💡 使用例</h3>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px;">
+                            <p><strong>例1:</strong> x² を微分 → 2x</p>
+                            <p style="margin-top: 8px;"><strong>例2:</strong> 3x³ を微分 → 9x²</p>
+                            <p style="margin-top: 8px;"><strong>例3:</strong> sin(x) を微分 → cos(x)</p>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🔄 合成</h3>
+                        <p>2枚合成すると<strong>マクローリン展開</strong>になります。詳細はレベル2で確認できます。</p>
+                    </div>
+                    `}
+                `;
+            } else if (card.type === 'integral') {
+                const isLv2 = card.level >= 2;
+                html = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">📝 基本説明</h3>
+                        <p>積分は微分の逆操作です。通常は関数の次数を1つ上げます。</p>
+                        ${isLv2 ? `<p style="margin-top: 12px; padding: 12px; background: rgba(106,90,205,0.12); border-left: 4px solid #6a5acd; border-radius: 4px;">
+                            <strong style="color: #6a5acd;">⭐ レベル2になると「特殊積分」になります！</strong><br>
+                            三角関数や指数関数にも対応できるようになります。
+                        </p>` : ''}
+                    </div>
+                    ${isLv2 ? `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #6a5acd; margin-bottom: 10px;">🌟 特殊積分とは？</h3>
+                        <p style="margin-bottom: 10px;">三角関数や指数関数の反導関数（逆操作）を求めます。微分の逆なので、サイクルが逆になります。</p>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px; margin-top: 10px;">
+                            <p style="font-weight: 600; margin-bottom: 8px; color: #6a5acd;">三角関数の積分サイクル:</p>
+                            <div style="text-align: center; line-height: 2;">
+                                <p>sin(x) →<strong> −cos(x)</strong></p>
+                                <p>cos(x) →<strong> sin(x)</strong></p>
+                                <p>−sin(x) →<strong> cos(x)</strong></p>
+                                <p>−cos(x) →<strong> −sin(x)</strong></p>
+                            </div>
+                            <p style="margin-top: 10px;"><strong>e<sup>x</sup></strong> の積分も <strong>e<sup>x</sup></strong>（変化なし）</p>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🔄 合成方法</h3>
+                        <p>積分Lv1 を <strong>2枚合成</strong> すると、特殊積分になります。</p>
+                    </div>
+                    ` : `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🎯 効果</h3>
+                        <p><strong>f(x) → ∫f(x)dx</strong></p>
+                        <p>ax<sup>n</sup> → (a/(n+1)) × x<sup>n+1</sup></p>
+                        <p style="margin-top: 8px; color: var(--text-secondary); font-size: 0.9rem;">※ Lv1では通常の多項式のみ対応。三角関数には効きません。</p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">💡 使用例</h3>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px;">
+                            <p><strong>例1:</strong> 2x を積分 → x²</p>
+                            <p style="margin-top: 8px;"><strong>例2:</strong> 6x を積分 → 3x²</p>
+                            <p style="margin-top: 8px;"><strong>例3:</strong> x² を積分 → (1/3)x³</p>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🔄 合成</h3>
+                        <p>2枚合成すると<strong>特殊積分</strong>になります。詳細はレベル2で確認できます。</p>
+                    </div>
+                    `}
+                `;
+            } else if (card.type === 'multiply') {
+                const multiplier = Math.pow(2, card.level);
+                html = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">📝 基本説明</h3>
+                        <p>関数全体を定数倍するカードです。係数を調整できます。</p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🎯 効果</h3>
+                        <p><strong>f(x) → ${multiplier} × f(x)</strong></p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">💡 使用例</h3>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px;">
+                            <p><strong>例1:</strong> x² に使用</p>
+                            <p>→ ${multiplier}x²</p>
+                            <p style="margin-top: 10px;"><strong>例2:</strong> 3x に使用</p>
+                            <p>→ ${multiplier * 3}x</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🔄 合成</h3>
+                        <p>レベル${card.level} × 2 → レベル${card.level + 1} (×${multiplier * 2}カード)</p>
+                    </div>
+                `;
+            } else if (card.type === 'sinify') {
+                html = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">📝 基本説明</h3>
+                        <p>三角関数のsin（サイン）に変換します。-1から1の間を波打つ関数です。</p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🎯 重要な値</h3>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px;">
+                            <p>sin(0) = 0</p>
+                            <p>sin(π/2) ≈ 1</p>
+                            <p>sin(π) ≈ 0</p>
+                            <p>sin(3π/2) ≈ -1</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">💡 ヒント</h3>
+                        <p>sin(x)を微分すると cos(x) になります。</p>
+                        <p>cos(x)をx=0で評価すると 1 になります。</p>
+                    </div>
+                `;
+            } else if (card.type === 'expify') {
+                html = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">📝 基本説明</h3>
+                        <p>自然対数の底e（≈2.718）を使った指数関数に変換します。</p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🎯 重要な値</h3>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px;">
+                            <p>e<sup>0</sup> = 1</p>
+                            <p>e<sup>1</sup> ≈ 2.718</p>
+                            <p>e<sup>2</sup> ≈ 7.389</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">💡 特徴</h3>
+                        <p>e<sup>x</sup>を微分しても e<sup>x</sup> のまま変わりません！</p>
+                        <p>対数化カードでxに戻すことができます。</p>
+                    </div>
+                `;
+            } else if (card.type === 'logify') {
+                html = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px; font-size: 1.1rem;">📝 基本説明</h3>
+                        <p style="font-size: 1rem; line-height: 1.8;">自然対数（log<sub>e</sub>）に変換します。指数関数の逆操作です。</p>
+                        <p style="margin-top: 12px; padding: 12px; background: rgba(217, 119, 87, 0.1); border-left: 4px solid var(--accent-main); border-radius: 4px; font-size: 1rem;">
+                            <strong>💡 わかりやすく言うと：</strong><br>
+                            「eを何乗したらこの数になるか？」を求めます
+                        </p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px; font-size: 1.1rem;">🎯 重要な値</h3>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px; font-size: 1rem; line-height: 2;">
+                            <p><strong>log<sub>e</sub>(1) = 0</strong></p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-left: 20px;">→ eを0乗すると1</p>
+                            <p style="margin-top: 8px;"><strong>log<sub>e</sub>(e) = 1</strong></p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-left: 20px;">→ eを1乗するとe</p>
+                            <p style="margin-top: 8px;"><strong>log<sub>e</sub>(e²) = 2</strong></p>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-left: 20px;">→ eを2乗するとe²</p>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px; font-size: 1.1rem;">💡 使い方のコツ</h3>
+                        <div style="background: rgba(139, 115, 85, 0.1); padding: 15px; border-radius: 6px; font-size: 1rem;">
+                            <p><strong>e<sup>x</sup>に対数化を使うと x に戻ります</strong></p>
+                            <p style="margin-top: 8px;">log<sub>e</sub>(e<sup>x</sup>) = x</p>
+                            <p style="margin-top: 12px; color: var(--text-secondary);">
+                                例: e<sup>x</sup> → log<sub>e</sub>化 → x（xに戻る！）
+                            </p>
+                        </div>
+                    </div>
+                `;
+            } else if (card.type === 'limit_zero') {
+                html = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px; font-size: 1.1rem;">📝 基本説明</h3>
+                        <p style="font-size: 1rem; line-height: 1.8;">極限カードは関数がx→0に近づくときの値を求めます。</p>
+                        <p style="margin-top: 12px; padding: 12px; background: rgba(212, 184, 184, 0.15); border-left: 4px solid var(--card-limit); border-radius: 4px; font-size: 1rem;">
+                            <strong style="color: #b86868;">💡 極限とは：</strong><br>
+                            xが0に限りなく近づいたときの関数の振る舞いを見る強力な数学ツールです
+                        </p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px; font-size: 1.1rem;">🎯 効果</h3>
+                        <p><strong>lim<sub>x→0</sub> f(x)</strong></p>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px; margin-top: 10px; font-size: 1rem; line-height: 2;">
+                            <p><strong>多項式の場合：</strong></p>
+                            <p style="margin-left: 20px;">ax<sup>n</sup> + c → c（定数項のみ残る）</p>
+                            <p style="margin-top: 12px;"><strong>特殊関数の場合：</strong></p>
+                            <p style="margin-left: 20px;">sin(x), cos(x), e<sup>x</sup> など → 0</p>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: #b86868; margin-bottom: 10px; font-size: 1.1rem;">🌟 有名な極限</h3>
+                        <div style="background: rgba(212, 184, 184, 0.1); padding: 15px; border-radius: 6px; font-size: 1rem;">
+                            <p style="font-weight: 600; margin-bottom: 10px;">マクローリン展開と組み合わせると強力：</p>
+                            <div style="margin-left: 15px; line-height: 2.2;">
+                                <p>sin(x) →<span style="color: #6a5acd;"> [マクローリン]</span> → x →<span style="color: #b86868;"> [極限]</span> → 0</p>
+                                <p>cos(x) →<span style="color: #6a5acd;"> [マクローリン]</span> → 1 − (1/2)x² →<span style="color: #b86868;"> [極限]</span> → 1</p>
+                                <p>e<sup>x</sup> →<span style="color: #6a5acd;"> [マクローリン]</span> → 1 + x →<span style="color: #b86868;"> [極限]</span> → 1</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px; font-size: 1.1rem;">💡 使用例</h3>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px; font-size: 1rem;">
+                            <p><strong>例1:</strong> f(x) = 3x² + 5 に使用</p>
+                            <p style="margin-left: 20px;">→ lim<sub>x→0</sub> (3x² + 5) = 5</p>
+                            <p style="margin-top: 10px;"><strong>例2:</strong> f(x) = 2x − 3 に使用</p>
+                            <p style="margin-left: 20px;">→ lim<sub>x→0</sub> (2x − 3) = −3</p>
+                            <p style="margin-top: 10px;"><strong>例3:</strong> f(x) = x に使用</p>
+                            <p style="margin-left: 20px;">→ lim<sub>x→0</sub> x = 0</p>
+                        </div>
+                    </div>
+                `;
+            } else if (card.type === 'inverse') {
+                html = `
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">📝 基本説明</h3>
+                        <p>関数の逆数（1÷関数）を取ります。</p>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">🎯 効果</h3>
+                        <p><strong>レベル${card.level}:</strong> ${card.level % 2 === 1 ? 'f(x) → 1/f(x)' : 'f(x) → f(x) (無効化)'}</p>
+                    </div>
+                    <div>
+                        <h3 style="color: var(--accent-main); margin-bottom: 10px;">💡 使用例</h3>
+                        <div style="background: var(--bg-primary); padding: 15px; border-radius: 6px;">
+                            <p><strong>例:</strong> f(x) = 2 に使用</p>
+                            <p>→ 1/2 = 0.5</p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            return html;
+        }
+
+        // ステージ選択に戻る
+        function backToStageSelect() {
+            document.getElementById('modal').classList.remove('active');
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('stage-select').style.display = 'flex';
+            
+            // 記録を更新
+            updateStageRecordDisplay();
+            
+            // ゲーム状態をリセット
+            gameState = {
+                currentStage: 1,
+                enemyFunction: { coefficient: 1, exponent: 2, constant: -6 },
+                hand: [],
+                selectedCardIndex: null,
+                mergeMode: false,
+                selectedForMerge: [],
+                remainingTurns: 5,
+                maxTurns: 5,
+                newCardIndices: [],
+                cardQueue: [],
+                cardQueueIndex: 0
+            };
+        }
+
+        // ページ読み込み時に記録を表示
+        window.addEventListener('DOMContentLoaded', () => {
+            updateStageRecordDisplay();
+        });
+    </script>
 </body>
 </html>
